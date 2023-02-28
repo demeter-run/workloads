@@ -1,0 +1,106 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: dataworkers.demeter.run
+spec:
+  group: demeter.run
+  names:
+    kind: DataWorker
+    plural: dataworkers
+    shortNames:
+      - dwk
+    singular: dataworker
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                image:
+                  type: string
+                replicas:
+                  type: number
+                enabled:
+                  type: boolean
+                args:
+                  type: string
+                tenancy:
+                  type: string 
+                  pattern: ^(\b(cluster|project|proxy)\b)$
+                envVars:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      value:
+                        type: string
+                annotations:
+                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
+                resources:
+                  type: object
+                  properties:
+                    limits:
+                      type: object
+                      properties:
+                        cpu:
+                          type: string
+                          pattern: ^(\d+m|\d+(\.\d{1,3})?)$
+                        memory:
+                          type: string
+                          pattern: ^(\d+(e\d+)?|\d+(\.\d+)?(e\d+)?[EPTGMK]i?)$
+                    requests:
+                      type: object
+                      properties:
+                        cpu:
+                          type: string
+                          pattern: ^(\d+m|\d+(\.\d{1,3})?)$
+                        memory:
+                          type: string
+                          pattern: ^(\d+(e\d+)?|\d+(\.\d+)?(e\d+)?[EPTGMK]i?)$
+                storage:
+                  type: object
+                  properties:
+                    class:
+                      type: string
+                    size:
+                      type: string
+                      pattern: ^(\d+(e\d+)?|\d+(\.\d+)?(e\d+)?[EPTGMK]i?)$
+            status:
+              type: object
+              properties:
+                runningStatus:
+                  type: string
+                availableReplicas:
+                  type: number
+                observedGeneration:
+                  type: number
+      additionalPrinterColumns:
+        - name: Enabled
+          type: boolean
+          jsonPath: .spec.enabled
+        - name: Replicas
+          type: number
+          jsonPath: .spec.replicas
+        - name: CPU
+          type: string
+          jsonPath: .spec.resources.requests.cpu
+        - name: Memory
+          type: string
+          jsonPath: .spec.resources.requests.memory
+        - name: Storage Class
+          type: string
+          jsonPath: .spec.storage.class
+        - name: Storage Size
+          type: string
+          jsonPath: .spec.storage.size
+      served: true
+      storage: true
+      subresources:
+        status: {}
