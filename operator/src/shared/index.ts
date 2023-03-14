@@ -1,4 +1,4 @@
-import { StorageClass, WorkloadPvc } from "@demeter-run/workloads-types";
+import { CustomResourceListResponse, ISpec, IStatus, StorageClass, WorkloadPvc } from "@demeter-run/workloads-types";
 import { getClients } from "@demeter-sdk/framework";
 import { V1PersistentVolumeClaim, V1Pod } from "@kubernetes/client-node";
 
@@ -79,4 +79,16 @@ export function getStorageDcuPerMin(storageClass: StorageClass, size: number, re
 
 export function getComputeDCUPerMin(size: Size, replicas: number) {
   return COMPUTE_DCU[size] * replicas;
+}
+
+export async function loadProjectInstances(apiGroup: string, apiVersion: string, plural: string ) {
+  const { crd } = getClients();
+
+  const res = (await crd.listClusterCustomObject(
+    apiGroup,
+    apiVersion,
+    plural,
+  )) as CustomResourceListResponse<ISpec, IStatus>;
+
+  return res.body.items;
 }

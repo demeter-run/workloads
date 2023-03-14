@@ -1,6 +1,6 @@
 import type { CustomResource, DataWorker } from "@demeter-run/workloads-types";
 import { collectWorkloadMetrics } from "../metrics/project";
-import { loadProjectInstances } from "../metrics/shared";
+import { loadProjectInstances } from "../shared";
 import { API_GROUP, API_VERSION, PLURAL } from "./constants";
 import { listResourcePods } from "./handlers";
 
