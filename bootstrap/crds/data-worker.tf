@@ -1,134 +1,199 @@
-resource "kubernetes_manifest" "kupo_crd" {
+resource "kubernetes_manifest" "dataworkers" {
   manifest = {
     "apiVersion" = "apiextensions.k8s.io/v1"
-    "kind"       = "CustomResourceDefinition"
+    "kind" = "CustomResourceDefinition"
     "metadata" = {
-      "name" = "kupos.demeter.run"
+      "name" = "dataworkers.demeter.run"
     }
     "spec" = {
       "group" = "demeter.run"
       "names" = {
-        "kind"   = "Kupo"
-        "plural" = "kupos"
+        "kind" = "DataWorker"
+        "plural" = "dataworkers"
         "shortNames" = [
-          "kp",
+          "dwk",
         ]
-        "singular" = "kupo"
+        "singular" = "dataworker"
       }
       "scope" = "Namespaced"
       "versions" = [
         {
+          "additionalPrinterColumns" = [
+            {
+              "jsonPath" = ".spec.enabled"
+              "name" = "Enabled"
+              "type" = "boolean"
+            },
+            {
+              "jsonPath" = ".spec.replicas"
+              "name" = "Replicas"
+              "type" = "number"
+            },
+            {
+              "jsonPath" = ".spec.resources.requests.cpu"
+              "name" = "CPU"
+              "type" = "string"
+            },
+            {
+              "jsonPath" = ".spec.resources.requests.memory"
+              "name" = "Memory"
+              "type" = "string"
+            },
+            {
+              "jsonPath" = ".spec.storage.class"
+              "name" = "Storage Class"
+              "type" = "string"
+            },
+            {
+              "jsonPath" = ".spec.storage.size"
+              "name" = "Storage Size"
+              "type" = "string"
+            },
+            {
+              "jsonPath" = ".status.computeDCUPerMin"
+              "name" = "Compute DCU/min"
+              "type" = "number"
+            },
+            {
+              "jsonPath" = ".status.storageDCUPerMin"
+              "name" = "Storage DCU/min"
+              "type" = "number"
+            },
+          ]
           "name" = "v1alpha1"
           "schema" = {
             "openAPIV3Schema" = {
               "properties" = {
                 "spec" = {
                   "properties" = {
-                    "deferDbIndexes" = {
-                      "type" = "boolean"
+                    "annotations" = {
+                      "type" = "object"
+                      "x-kubernetes-preserve-unknown-fields" = true
                     }
-                    "instanceName": {
-                      "type": "string"
-                    }
-                    "salt": {
-                      "type": "string"
+                    "args" = {
+                      "type" = "string"
                     }
                     "enabled" = {
                       "type" = "boolean"
                     }
-                    "matches" = {
+                    "envVars" = {
                       "items" = {
-                        "type" = "string"
+                        "properties" = {
+                          "name" = {
+                            "type" = "string"
+                          }
+                          "value" = {
+                            "type" = "string"
+                          }
+                        }
+                        "type" = "object"
                       }
                       "type" = "array"
                     }
-                    "network" = {
+                    "givenName" = {
                       "type" = "string"
                     }
-                    "pruneUtxo" = {
-                      "type" = "boolean"
-                    }
-                    "since" = {
+                    "image" = {
                       "type" = "string"
                     }
                     "replicas" = {
                       "type" = "number"
                     }
-                    "tenancy" = {
-                      "type" = "string" // VALIDATE 'cluster', 'project', 'proxy'
-                      "pattern" = "^(\\b(cluster|project|proxy)\\b)$"
-                    }
                     "resources" = {
-                      "type" = "object"
                       "properties" = {
                         "limits" = {
-                          "type" = "object"
                           "properties" = {
-                            "cpu" : {
-                              "type" : "string"
-                              "pattern" : "^(\\d+m|\\d+(\\.\\d{1,3})?)$"
+                            "cpu" = {
+                              "pattern" = "^(\\d+m|\\d+(\\.\\d{1,3})?)$"
+                              "type" = "string"
                             }
-                            "memory" : {
-                              "type" : "string"
-                              "pattern" : "^(\\d+(e\\d+)?|\\d+(\\.\\d+)?(e\\d+)?[EPTGMK]i?)$"
+                            "memory" = {
+                              "pattern" = "^(\\d+(e\\d+)?|\\d+(\\.\\d+)?(e\\d+)?[EPTGMK]i?)$"
+                              "type" = "string"
                             }
                           }
+                          "type" = "object"
                         }
                         "requests" = {
-                          "type" = "object"
                           "properties" = {
-                            "cpu" : {
-                              "type" : "string"
-                              "pattern" : "^(\\d+m|\\d+(\\.\\d{1,3})?)$"
+                            "cpu" = {
+                              "pattern" = "^(\\d+m|\\d+(\\.\\d{1,3})?)$"
+                              "type" = "string"
                             }
-                            "memory" : {
-                              "type" : "string"
-                              "pattern" : "^(\\d+(e\\d+)?|\\d+(\\.\\d+)?(e\\d+)?[EPTGMK]i?)$"
+                            "memory" = {
+                              "pattern" = "^(\\d+(e\\d+)?|\\d+(\\.\\d+)?(e\\d+)?[EPTGMK]i?)$"
+                              "type" = "string"
                             }
                           }
+                          "type" = "object"
                         }
                       }
+                      "type" = "object"
                     }
                     "storage" = {
-                      "type" = "object"
                       "properties" = {
-                        "class": {
-                          "type": "string"
+                        "class" = {
+                          "type" = "string"
                         }
-                        "size": {
-                          "type": "string"
-                          "pattern": "^(\\d+(e\\d+)?|\\d+(\\.\\d+)?(e\\d+)?[EPTGMK]i?)$"
+                        "size" = {
+                          "pattern" = "^(\\d+(e\\d+)?|\\d+(\\.\\d+)?(e\\d+)?[EPTGMK]i?)$"
+                          "type" = "string"
                         }
                       }
-                    }
-                    "image" = {
-                      "type" = "string"
-                    }
-                    "nodePrivateDns" = {
-                      "type" = "string"
-                    }
-                    "labels" = {
                       "type" = "object"
+                    }
+                    "tenancy" = {
+                      "pattern" = "^(\\b(cluster|project|proxy)\\b)$"
+                      "type" = "string"
                     }
                   }
                   "type" = "object"
                 }
                 "status" = {
                   "properties" = {
-                    "observedGeneration" = {
-                      "type" = "integer"
-                    }
-                    "privateDns" = {
-                      "type" = "string"
-                    }
-                    "runningStatus" = {
-                      "type" = "string"
+                    "availableEnvVars" = {
+                      "items" = {
+                        "type" = "string"
+                      }
+                      "type" = "array"
                     }
                     "availableReplicas" = {
                       "type" = "number"
                     }
-                    "syncStatus" = {
+                    "computeDCUPerMin" = {
+                      "type" = "number"
+                    }
+                    "observedGeneration" = {
+                      "type" = "number"
+                    }
+                    "runningStatus" = {
                       "type" = "string"
+                    }
+                    "startTime" = {
+                      "type" = "number"
+                    }
+                    "storage" = {
+                      "items" = {
+                        "properties" = {
+                          "class" = {
+                            "type" = "string"
+                          }
+                          "inUse" = {
+                            "type" = "boolean"
+                          }
+                          "name" = {
+                            "type" = "string"
+                          }
+                          "size" = {
+                            "type" = "string"
+                          }
+                        }
+                        "type" = "object"
+                      }
+                      "type" = "array"
+                    }
+                    "storageDCUPerMin" = {
+                      "type" = "number"
                     }
                   }
                   "type" = "object"
@@ -137,39 +202,7 @@ resource "kubernetes_manifest" "kupo_crd" {
               "type" = "object"
             }
           }
-          "additionalPrinterColumns" = [
-            { 
-              "name": "Network"
-              "type": "string"
-              "jsonPath": ".spec.network"
-            },
-            { 
-              "name": "Enabled"
-              "type": "boolean"
-              "jsonPath": ".spec.enabled"
-            },
-            { 
-              "name": "Defer DB Indexes"
-              "type": "string"
-              "jsonPath": ".spec.deferDbIndexes"
-            },
-            { 
-              "name": "Prune UTXO"
-              "type": "string"
-              "jsonPath": ".spec.pruneUtxo"
-            },
-            { 
-              "name": "Status"
-              "type": "string"
-              "jsonPath": ".status.runningStatus"
-            },
-            { 
-              "name": "Sync Status"
-              "type": "string"
-              "jsonPath": ".status.syncStatus"
-            }
-          ]
-          "served"  = true
+          "served" = true
           "storage" = true
           "subresources" = {
             "status" = {}

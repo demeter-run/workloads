@@ -20,6 +20,8 @@ spec:
             spec:
               type: object
               properties:
+                givenName:
+                  type: string
                 image:
                   type: string
                 replicas:
@@ -81,6 +83,31 @@ spec:
                   type: number
                 observedGeneration:
                   type: number
+                storage:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      size:
+                        type: string
+                      class:
+                        type: string
+                      inUse:
+                        type: boolean
+                availableEnvVars:
+                  type: array
+                  items:
+                    type:
+                      string
+                startTime:
+                  type: number
+                storageDCUPerMin:
+                  type: number
+                computeDCUPerMin:
+                  type: number
+
       additionalPrinterColumns:
         - name: Enabled
           type: boolean
@@ -100,6 +127,12 @@ spec:
         - name: Storage Size
           type: string
           jsonPath: .spec.storage.size
+        - name: Compute DCU/min
+          type: number
+          jsonPath: .status.computeDCUPerMin
+        - name: Storage DCU/min
+          type: number
+          jsonPath: .status.storageDCUPerMin
       served: true
       storage: true
       subresources:

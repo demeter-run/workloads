@@ -2,26 +2,24 @@ import { V1StatefulSet, V1StatefulSetStatus, V1PersistentVolumeClaim, PatchUtils
 import { getClients, slugToNamespace, readProjectUnsecure, Network, namespaceToSlug } from '@demeter-sdk/framework';
 import { Pod } from './model';
 import { API_VERSION, API_GROUP, PLURAL, SINGULAR, KIND } from './constants';
-import { CustomResource, CustomResourceListResponse, DataWorker } from '@demeter-run/workloads-types';
+import { CustomResource, CustomResourceListResponse, DataWorker, StorageClass } from '@demeter-run/workloads-types';
 import { buildEnvVars, getDependenciesForNetwork, getNetworkFromAnnotations, isCardanoNodeEnabled } from './dependencies';
 import * as nodes from '@demeter-features/cardano-nodes';
+import { getComputeDCUPerMin, getStorageDcuPerMin, listStorage, listStorageWithUsage, loadPods, Size } from '../shared';
 
 const DNS_ZONE = process.env.DNS_ZONE;
 const CLUSTER_NAME = process.env.CLUSTER_NAME;
 
 export const clusterDnsZone = `${CLUSTER_NAME}.${DNS_ZONE}`;
 
-function buildPVCName(name: string) {
-    return `db-${name}-0`;
-}
 
 type Status = 'running' | 'paused' | 'provisioning';
 
-export function getSTSStatus(status: V1StatefulSetStatus): Status {
-    if (status.replicas === 0 || !status.updatedReplicas) return 'paused';
+export function getSTSStatus(status: V1StatefulSetStatus, replicas: number): Status {
+    if (replicas === 0) return 'paused';
     if (status.replicas && status.replicas > 0 && status.readyReplicas && status.readyReplicas > 0) return 'running';
     if (status.replicas === 1 && (status.readyReplicas === 0 || typeof status.readyReplicas === 'undefined')) return 'provisioning';
-    return 'paused';
+    return 'provisioning';
 }
 
 export async function listResources(ns: string) {
@@ -62,79 +60,164 @@ export async function handleResource(ns: string, name: string, spec: DataWorker.
     const deps = await getDependenciesForNetwork(project, network);
     const envVars = await buildEnvVars(deps, network);
     const usesCardanoNode = isCardanoNodeEnabled(deps);
-    const containerList = containers(spec, envVars, usesCardanoNode);
     const volumesList = volumes(usesCardanoNode);
-    const existing = await apps.readNamespacedStatefulSet(name, ns);
-    if (existing?.body) {
-        await apps.replaceNamespacedStatefulSet(name, ns, sts(name, spec, owner, containerList, volumesList));
-    } else {
+    const containerList = containers(spec, envVars, usesCardanoNode);
+    try {
+        await apps.readNamespacedStatefulSet(name, ns);
+        //@TODO sync 
+        await updateResource(ns, name, spec, containerList, volumesList, envVars);
+        // await apps.replaceNamespacedStatefulSet(name, ns, sts(name, spec, owner, containerList, volumesList));
+    } catch (err: any) {
+        console.log(err?.body)
         await apps.createNamespacedStatefulSet(ns, sts(name, spec, owner, containerList, volumesList));
     }
-
 }
 
-export async function updateResource(ns: string, name: string, spec: DataWorker.Spec): Promise<void> {
-    // const { apps, core } = getClients();
+export async function updateResource(ns: string, name: string, spec: DataWorker.Spec, containers: V1Container[], volumes: V1Volume[] | undefined, envVars: V1EnvVar[]): Promise<void> {
+    const { apps, core } = getClients();
 
-    // // patch resource
-    // const mainArgs = buildArgs(spec);
-    // const socatArgs = buildSocatArgs(spec);
-    // const patchBody = {
-    //     metadata: {
-    //         labels: {
-    //             'cardano.demeter.run/network': spec.network,
-    //         }
-    //     },
-    //     spec: {
-    //         template: {
-    //             spec: {
-    //                 containers: [{
-    //                     name: 'main',
-    //                     args: mainArgs,
-    //                     resources: spec.resources,
-    //                     image: spec.image
+    // containers should be replaced because of we might need to remove socat and replace ENV VARS
+    const containersList = [
+        {
+            op: 'replace',
+            path: '/spec/template/spec/containers',
+            value: containers
+        }
+    ];
 
-    //                 },
-    //                 {
-    //                     name: 'socat',
-    //                     args: socatArgs,
-    //                 }]
-    //             }
-    //         },
-    //         replicas: spec.enabled ? spec.replicas : 0,
-    //     }
-    // }
-    // let options = { headers: { 'Content-type': PatchUtils.PATCH_FORMAT_STRATEGIC_MERGE_PATCH } };
-    // await apps.patchNamespacedStatefulSet(name, ns, patchBody, undefined, undefined, undefined, undefined, undefined, options);
+    await apps.patchNamespacedStatefulSet(name, ns, containersList, undefined, undefined, undefined, undefined, undefined, { headers: { 'content-type': PatchUtils.PATCH_FORMAT_JSON_PATCH } });
 
-    // // patch pvc
-    // const pvcPatchBody = {
-    //     spec: {
-    //         resources: {
-    //             requests: {
-    //                 storage: spec.storage.size,
-    //             },
-    //         },
-    //         storageClassName: spec.storage.class,
-    //     }
-    // }
+    // patch resource
+    const patchBody = {
+        metadata: {
+            labels: {
+                ...spec.annotations,
+            },
+        },
+        spec: {
+            replicas: spec.enabled ? spec.replicas : 0,
+            template: {
+                spec: {
+                    restartPolicy: 'Always',
+                    volumes
+                },
+            },
+        },
+    };
 
-    // options = { headers: { 'Content-type': PatchUtils.PATCH_FORMAT_JSON_MERGE_PATCH } };
-    // await core.patchNamespacedPersistentVolumeClaim(buildPVCName(name), ns, pvcPatchBody, undefined, undefined, undefined, undefined, undefined, options);
+    let options = { headers: { 'Content-type': PatchUtils.PATCH_FORMAT_STRATEGIC_MERGE_PATCH } };
+    await apps.patchNamespacedStatefulSet(name, ns, patchBody, undefined, undefined, undefined, undefined, undefined, options);
+
+    const pvcs = await listStorage(ns, name);
+    for (const pvc of pvcs) {
+        //  patch pvc
+        const pvcPatchBody = {
+            spec: {
+                resources: {
+                    requests: {
+                        storage: spec.storage.size,
+                    },
+                },
+                storageClassName: spec.storage.class,
+            }
+        }
+
+        options = { headers: { 'Content-type': PatchUtils.PATCH_FORMAT_JSON_MERGE_PATCH } };
+        await core.patchNamespacedPersistentVolumeClaim(pvc.metadata?.name!, ns, pvcPatchBody, undefined, undefined, undefined, undefined, undefined, options);
+    }
+
+    
 }
 
 export async function updateResourceStatus(ns: string, name: string, resource: V1StatefulSet): Promise<void> {
     const { crd } = getClients();
+    const pods = await loadPods(ns, name);
+
+    const storage = await listStorageWithUsage(ns, name, pods);
+    const mainContainer = resource.spec?.template.spec?.containers.find(i => i.name === 'main');
+
+    const availableEnvVars = mainContainer?.env?.map(i => i.name);
+
+    const runningStatus = getSTSStatus(resource.status!, resource.spec?.replicas!);
+
+    let computeDCUPerMin = 0;
+    if (runningStatus === 'running') {
+        computeDCUPerMin = getComputeDCUPerMin(resource.metadata?.labels!['demeter.run/size'] as Size, resource.spec?.replicas!)
+    }
+    let storageDCUPerMin = 0;
+
+    if (storage.length) {
+        storageDCUPerMin = getStorageDcuPerMin(storage[0].class as StorageClass, Number(storage[0].size.replace('Gi', '')), storage.length)
+    }
 
     const patch = {
         status: {
             availableReplicas: resource.status?.availableReplicas,
-            runningStatus: getSTSStatus(resource.status!),
+            runningStatus,
+            storage,
+            computeDCUPerMin,
+            storageDCUPerMin,
         },
     };
 
     const options = { headers: { 'Content-type': PatchUtils.PATCH_FORMAT_JSON_MERGE_PATCH } };
     await crd.patchNamespacedCustomObjectStatus(API_GROUP, API_VERSION, ns, PLURAL, name, patch, undefined, undefined, undefined, options);
+
+    // env vars should not be merged.
+    const envPatch = [{
+        op: 'replace',
+        path: '/status/availableEnvVars',
+        value: availableEnvVars,
+    }];
+
+    await crd.patchNamespacedCustomObjectStatus(API_GROUP, API_VERSION, ns, PLURAL, name, envPatch, undefined, undefined, undefined, { headers: { 'content-type': PatchUtils.PATCH_FORMAT_JSON_PATCH } });
+
+}
+
+export async function pvcUpdated(ns: string, name: string, resource: V1PersistentVolumeClaim): Promise<void> {
+    const { crd } = getClients();
+    const instance = resource.metadata?.labels ? resource.metadata?.labels['demeter.run/instance'] : undefined;
+
+    if (!instance) return;
+    const pods = await loadPods(ns, instance);
+
+    const storage = await listStorageWithUsage(ns, instance, pods);
+
+    let storageDCUPerMin = 0;
+
+    if (storage.length) {
+        storageDCUPerMin = getStorageDcuPerMin(storage[0].class as StorageClass, Number(storage[0].size.replace('Gi', '')), storage.length)
+    }
+
+    const patch = {
+        status: {
+            storage,
+            storageDCUPerMin
+        },
+    };
+
+    try {
+        const options = { headers: { 'Content-type': PatchUtils.PATCH_FORMAT_JSON_MERGE_PATCH } };
+        await crd.patchNamespacedCustomObjectStatus(API_GROUP, API_VERSION, ns, PLURAL, instance, patch, undefined, undefined, undefined, options);
+    } catch (err: any) {
+        throw err?.body || err;
+    }
+
+}
+
+export async function podUpdated(ns: string, name: string, resource: V1Pod): Promise<void> {
+    const { crd } = await getClients();
+    const main = resource.status?.containerStatuses?.find(item => item.name === 'main');
+    if (main && !main.ready && main.restartCount > 1) {
+        const patch = {
+            status: {
+                runningStatus: 'error',
+            },
+        };
+        const owner = resource.metadata?.ownerReferences![0]!;
+        const options = { headers: { 'Content-type': PatchUtils.PATCH_FORMAT_JSON_MERGE_PATCH } };
+        await crd.patchNamespacedCustomObjectStatus(API_GROUP, API_VERSION, ns, PLURAL, owner.name, patch, undefined, undefined, undefined, options);
+    }
 }
 
 export async function listResourcePods(projectSlug: string, instanceId: string) {
@@ -149,12 +232,18 @@ export async function listResourcePods(projectSlug: string, instanceId: string) 
     }
 }
 
-export async function deletePVC(ns: string, name: string): Promise<void> {
+export async function deletePVCs(ns: string, name: string): Promise<void> {
     const { core } = getClients();
     // Auto delete of the PVC is still behind an alpha feature gate (StatefulSetAutoDeletePVC).
     // Once it reaches GA, we can rely on k8s for the clean up procedure.
     // In the meantime, we need to manually call the delete step as part of Demeter logic.
-    await core.deleteNamespacedPersistentVolumeClaim(buildPVCName(name), ns);
+    const pvcs = await core.listNamespacedPersistentVolumeClaim(ns, undefined, undefined, undefined, undefined, `demeter.run/instance=${name}`);
+
+    if (pvcs.body.items.length) {
+        for (const item of pvcs.body.items) {
+            await core.deleteNamespacedPersistentVolumeClaim(item.metadata?.name!, ns);
+        }
+    }
 }
 
 function buildSocatArgs(spec: DataWorker.Spec) {
@@ -202,6 +291,8 @@ function sts(name: string, spec: DataWorker.Spec, owner: CustomResource<DataWork
                     name,
                     labels: {
                         'demeter.run/instance': name,
+                        'demeter.run/version': owner.apiVersion!.split('/')[1],
+                        'demeter.run/kind': owner.kind!,
                     },
                 },
                 spec: {
@@ -229,6 +320,10 @@ function pvc(name: string, spec: DataWorker.Spec): V1PersistentVolumeClaim {
     return {
         metadata: {
             name,
+            labels: {
+                'demeter.run/kind': KIND,
+                'demeter.run/version': API_VERSION,
+            }
         },
         spec: {
             accessModes: ['ReadWriteOnce'],
@@ -277,7 +372,7 @@ function containers(spec: DataWorker.Spec, envVars: V1EnvVar[], usesCardanoNode:
             imagePullPolicy: 'IfNotPresent',
             volumeMounts,
             args,
-            env: envVars
+            env: [...envVars, ...spec.envVars]
         }
     ];
 

@@ -10,7 +10,7 @@ async function collectCustomExtensionsMetrics() {
   const instances = await loadProjectInstances(API_GROUP, API_VERSION, PLURAL) as CustomResource<DataWorker.Spec, DataWorker.Status>[];
 
   for (const instance of instances) {
-    await collectWorkloadMetrics(instance, listResourcePods);
+    await collectWorkloadMetrics(instance);
   }
 }
 

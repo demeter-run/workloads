@@ -1,7 +1,9 @@
 import { CustomResource, DataWorker } from '@demeter-run/workloads-types';
 import Operator, { ResourceEventType, ResourceEvent } from '@dot-i/k8s-operator';
 import { API_VERSION, API_GROUP, PLURAL } from './constants';
-import { handleResource, deletePVC, updateResource } from './handlers';
+import { handleResource, deletePVCs } from './handlers';
+
+const RUNNING_STATUSES = ['running', 'provisioning', 'syncing', 'error']
 
 export default class KupoOperator extends Operator {
     constructor() {
@@ -38,16 +40,12 @@ export default class KupoOperator extends Operator {
         console.log('RESOURCE CREATED', e.meta);
 
         // we have a status already, probably a restart is re-triggering the message. let's skip it
-        if (status) {
-            return;
+        if (!status) {
+            await this.setResourceStatus(e.meta, {
+                runningStatus: 'provisioning',
+                observedGeneration: metadata?.generation,
+            });
         }
-
-        // set the default values for status.
-        await this.setResourceStatus(e.meta, {
-            privateDns: `${metadata?.name}.${metadata?.namespace!}.svc.cluster.local`,
-            runningStatus: 'provisioning',
-            observedGeneration: metadata?.generation,
-        });
 
         // create the k8s resources needed
         await handleResource(metadata?.namespace!, metadata?.name!, spec, object);
@@ -56,18 +54,17 @@ export default class KupoOperator extends Operator {
     private async resourceModified(e: ResourceEvent) {
         const object = e.object as CustomResource<DataWorker.Spec, DataWorker.Status>;
         const { metadata, status, spec } = object;
-        console.log('UPDATING STATUS', status);
-        if ((!spec.enabled && status.runningStatus === 'running') || (spec.enabled && status.runningStatus === 'paused')) {
-            await this.setResourceStatus(e.meta, {
-                ...status,
+        console.log('UPDATING STATUS');
+        if ((!spec.enabled && RUNNING_STATUSES.includes(status.runningStatus)) || (spec.enabled && status.runningStatus === 'paused')) {
+            await this.patchResourceStatus(e.meta, {
                 runningStatus: 'syncing',
+                startTime: spec.enabled ? Date.now() : 0,
             });
         }
         // update the kupo resource
         await handleResource(metadata?.namespace!, metadata?.name!, spec, object);
-        if (!object.status || object.status.observedGeneration !== metadata?.generation) {
-            await this.setResourceStatus(e.meta, {
-                ...status,
+        if (status.observedGeneration !== metadata?.generation) {
+            await this.patchResourceStatus(e.meta, {
                 observedGeneration: metadata?.generation,
             });
         }
@@ -75,7 +72,7 @@ export default class KupoOperator extends Operator {
 
     private async resourceDeleted(e: ResourceEvent) {
         console.log('deleted');
-        // const { metadata } = e.object as CustomResource<DataWorker.Spec, DataWorker.Status>;
-        // await deletePVC(metadata?.namespace!, metadata?.name!);
+        const { metadata } = e.object as CustomResource<DataWorker.Spec, DataWorker.Status>;
+        await deletePVCs(metadata?.namespace!, metadata?.name!);
     }
 }
