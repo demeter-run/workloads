@@ -4,13 +4,15 @@ metadata:
   name: beautiful-garbage-1as1244
   namespace: prj-yeti-project-3f5c95
 spec:
+  givenName: yeti-test
   image: avatxus/tx-builder:1.0.1
   annotations: {
-    'cardano.demeter.run/network': 'preview'
+    'cardano.demeter.run/network': 'preview',
+    'demeter.run/size': 'small'
   }
   envVars: [{name: 'MY_ENV_VAR_NAME', value: 'SARASA'}]
   enabled: true
-  replicas: 1
+  replicas: 2
   tenancy: project
   args: ''
   resources:
@@ -22,4 +24,4 @@ spec:
       cpu: 50m
   storage:
     class: gp3
-    size: 10Gi
+    size: 13Gi

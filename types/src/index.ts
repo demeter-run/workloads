@@ -1,13 +1,46 @@
-import { KubernetesObject, V1ContainerStatus, V1ListMeta } from '@kubernetes/client-node';
+import { KubernetesObject, V1ContainerStatus, V1ListMeta, V1PersistentVolumeClaim } from '@kubernetes/client-node';
 import { IncomingMessage } from 'http';
 
 export * as DataWorker from './data-worker';
 
+export type WorkloadStatus = 'paused' | 'running' | 'provisioning' | 'syncing' | 'error';
+
+export type EnvVar = {
+  name: string,
+  value: string,
+}
+export type StorageClass = 'gp3' | 'fast';
+
+export type StorageItem = {
+  name: string,
+  size: string,
+  class: StorageClass,
+  inUse: boolean,
+}
+
 export interface ISpec {
+  givenName: string;
+  image: string;
+  replicas: number;
+  enabled: boolean;
+  args: string;
+  envVars: EnvVar[];
+  annotations: Record<string, string>;
+  tenancy: 'cluster' | 'project' | 'proxy'
+  resources: {
+    requests: ResourceRequest,
+    limits: ResourceRequest
+  }
   [k: string]: unknown
 }
 
 export interface IStatus {
+  runningStatus: WorkloadStatus;
+  availableReplicas: number;
+  observedGeneration: number;
+  availableEnvVars: string[];
+  startTime: number;
+  computeDCUPerMin: number;
   [k: string]: unknown
 }
 
@@ -54,3 +87,11 @@ export type Pod = {
   startTime: string;
   containers: V1ContainerStatus[];
 };
+
+export interface WorkloadPvc {
+  name: string;
+  size: string;
+  class: string;
+  inUse?: boolean;
+};
+
