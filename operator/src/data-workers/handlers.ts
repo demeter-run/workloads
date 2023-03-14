@@ -7,12 +7,6 @@ import { buildEnvVars, getDependenciesForNetwork, getNetworkFromAnnotations, isC
 import * as nodes from '@demeter-features/cardano-nodes';
 import { getComputeDCUPerMin, getStorageDcuPerMin, listStorage, listStorageWithUsage, loadPods, Size } from '../shared';
 
-const DNS_ZONE = process.env.DNS_ZONE;
-const CLUSTER_NAME = process.env.CLUSTER_NAME;
-
-export const clusterDnsZone = `${CLUSTER_NAME}.${DNS_ZONE}`;
-
-
 type Status = 'running' | 'paused' | 'provisioning';
 
 export function getSTSStatus(status: V1StatefulSetStatus, replicas: number): Status {
