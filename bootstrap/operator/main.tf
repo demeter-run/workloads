@@ -10,19 +10,15 @@ variable "scrape_interval" {
 }
 variable "per_min_dcus" {
   default = {
-    "shared" : {
-      "mainnet" : 22,
-      "default" : 8,
+    "compute" : {
+      "nano" : 154,
+      "small" : 308,
+      "medium": 729,
+      "large": 1458,
     },
-    "custom" : {
-      "compute" : {
-        "mainnet" : 1458,
-        "default" : 486,
-      },
-      "storage" : {
-        "mainnet" : 83
-        "default" : 28
-      }
+    "storage" : {
+      "fast" : 16,
+      "gp3" : 8
     }
   }
 }
@@ -76,48 +72,38 @@ resource "kubernetes_deployment_v1" "operator" {
           }
 
           env {
-            name  = "DNS_ZONE"
-            value = var.dns_zone
-          }
-
-          env {
-            name  = "CLUSTER_NAME"
-            value = var.cluster_name
-          }
-
-          env {
             name  = "SCRAPE_INTERVAL_S"
             value = var.scrape_interval
           }
 
           env {
-            name  = "CUSTOM_COMPUTE_PER_MIN_DEFAULT_DCUS"
-            value = var.per_min_dcus["custom"]["compute"]["default"]
+            name  = "NANO_COMPUTE_PER_MIN_DCUS"
+            value = var.per_min_dcus.compute.nano
           }
 
           env {
-            name  = "CUSTOM_COMPUTE_PER_MIN_MAINNET_DCUS"
-            value = var.per_min_dcus["custom"]["compute"]["mainnet"]
+            name  = "SMALL_COMPUTE_PER_MIN_DCUS"
+            value = var.per_min_dcus.compute.small
           }
 
           env {
-            name  = "CUSTOM_STORAGE_PER_MIN_DEFAULT_DCUS"
-            value = var.per_min_dcus["custom"]["storage"]["default"]
+            name  = "MEDIUM_COMPUTE_PER_MIN_DCUS"
+            value = var.per_min_dcus.compute.medium
           }
 
           env {
-            name  = "CUSTOM_STORAGE_PER_MIN_MAINNET_DCUS"
-            value = var.per_min_dcus["custom"]["storage"]["mainnet"]
+            name  = "LARGE_COMPUTE_PER_MIN_DCUS"
+            value = var.per_min_dcus.compute.large
           }
 
           env {
-            name  = "SHARED_PER_MIN_DEFAULT_DCUS"
-            value = var.per_min_dcus["shared"]["default"]
+            name  = "GP3_STORAGE_PER_GB_PER_MIN_DCUS"
+            value = var.per_min_dcus.storage.gp3
           }
 
           env {
-            name  = "SHARED_PER_MIN_MAINNET_DCUS"
-            value = var.per_min_dcus["shared"]["mainnet"]
+            name  = "FAST_STORAGE_PER_GB_PER_MIN_DCUS"
+            value = var.per_min_dcus.storage.fast
           }
 
           resources {

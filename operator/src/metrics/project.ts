@@ -3,13 +3,6 @@ import { namespaceToSlug } from '@demeter-sdk/framework';
 import { ageGauge, dcuCounter, restartCount, statusGauge } from './prometheus';
 import { CustomResource, ISpec, IStatus } from '@demeter-run/workloads-types';
 
-// Compute DCU
-const COMPUTE_PER_MIN_MAINNET_DCUS = process.env.CUSTOM_COMPUTE_PER_MIN_MAINNET_DCUS ? Number(process.env.CUSTOM_COMPUTE_PER_MIN_MAINNET_DCUS) : 12000;
-const COMPUTE_PER_MIN_DEFAULT_DCUS = process.env.CUSTOM_COMPUTE_PER_MIN_DEFAULT_DCUS ? Number(process.env.CUSTOM_COMPUTE_PER_MIN_DEFAULT_DCUS) : 4000;
-// Storage DCU
-const STORAGE_PER_MIN_MAINNET_DCUS = process.env.CUSTOM_STORAGE_PER_MIN_MAINNET_DCUS ? Number(process.env.CUSTOM_STORAGE_PER_MIN_MAINNET_DCUS) : 21;
-const STORAGE_PER_MIN_DEFAULT_DCUS = process.env.CUSTOM_STORAGE_PER_MIN_DEFAULT_DCUS ? Number(process.env.CUSTOM_STORAGE_PER_MIN_DEFAULT_DCUS) : 7;
-
 const MAX_SCRAPE_DELTA_S = 30;
 const DESIRED_INTERVAL = process.env.SCRAPE_INTERVAL_S ? Number(process.env.SCRAPE_INTERVAL_S) : MAX_SCRAPE_DELTA_S;
 
