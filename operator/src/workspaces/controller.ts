@@ -1,7 +1,8 @@
-import { CustomResource, DataWorker } from '@demeter-run/workloads-types';
+import { CustomResource, Workspace } from '@demeter-run/workloads-types';
 import Operator, { ResourceEventType, ResourceEvent } from '@dot-i/k8s-operator';
 import { API_VERSION, API_GROUP, PLURAL } from './constants';
 import { handleResource, deletePVCs } from './handlers';
+import { buildHealthUrl, buildOpenUrl } from './helpers';
 
 const RUNNING_STATUSES = ['running', 'provisioning', 'syncing', 'error']
 
@@ -35,7 +36,7 @@ export default class KupoOperator extends Operator {
     }
 
     private async resourceCreated(e: ResourceEvent) {
-        const object = e.object as CustomResource<DataWorker.Spec, DataWorker.Status>;
+        const object = e.object as CustomResource<Workspace.Spec, Workspace.Status>;
         const { metadata, spec, status } = object;
         console.log('RESOURCE CREATED', e.meta);
 
@@ -44,6 +45,8 @@ export default class KupoOperator extends Operator {
             await this.setResourceStatus(e.meta, {
                 runningStatus: 'provisioning',
                 observedGeneration: metadata?.generation,
+                healthUrl: buildHealthUrl(metadata?.name!, metadata?.namespace!),
+                openUrl: buildOpenUrl(metadata?.name!, spec),
                 startTime: spec.enabled ? Date.now() : 0,
             });
         }
@@ -53,7 +56,7 @@ export default class KupoOperator extends Operator {
     }
 
     private async resourceModified(e: ResourceEvent) {
-        const object = e.object as CustomResource<DataWorker.Spec, DataWorker.Status>;
+        const object = e.object as CustomResource<Workspace.Spec, Workspace.Status>;
         const { metadata, status, spec } = object;
         console.log('UPDATING STATUS');
         if ((!spec.enabled && RUNNING_STATUSES.includes(status.runningStatus)) || (spec.enabled && status.runningStatus === 'paused')) {
@@ -73,7 +76,7 @@ export default class KupoOperator extends Operator {
 
     private async resourceDeleted(e: ResourceEvent) {
         console.log('deleted');
-        const { metadata } = e.object as CustomResource<DataWorker.Spec, DataWorker.Status>;
+        const { metadata } = e.object as CustomResource<Workspace.Spec, Workspace.Status>;
         await deletePVCs(metadata?.namespace!, metadata?.name!);
     }
 }

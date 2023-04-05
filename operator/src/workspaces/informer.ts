@@ -12,11 +12,7 @@ const stsInformer = makeInformer(client, '/apis/apps/v1/statefulsets', listFn, L
 
 stsInformer.on('update', async resource => {
     console.log('SHARED - STS INFORMER UPDATE');
-    try {
-        await updateResourceStatus(resource.metadata?.namespace!, resource.metadata?.name!, resource);
-    } catch (err) {
-        console.error(err);
-    }
+    await updateResourceStatus(resource.metadata?.namespace!, resource.metadata?.name!, resource);
 });
 
 stsInformer.on('error', error => console.error(error));

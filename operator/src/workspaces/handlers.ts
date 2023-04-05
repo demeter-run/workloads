@@ -1,13 +1,13 @@
-import { V1StatefulSet, V1PersistentVolumeClaim, PatchUtils, V1Pod, V1Container, V1EnvVar, V1Volume, V1VolumeMount } from '@kubernetes/client-node';
+import { V1StatefulSet, V1PersistentVolumeClaim, PatchUtils, V1Pod, V1Container, V1EnvVar, V1Volume, V1VolumeMount, V1Ingress, V1Service } from '@kubernetes/client-node';
 import { getClients, slugToNamespace, readProjectUnsecure, Network, namespaceToSlug } from '@demeter-sdk/framework';
-import { API_VERSION, API_GROUP, PLURAL, SINGULAR, KIND } from './constants';
-import { CustomResource, CustomResourceResponse, DataWorker, Pod, StorageClass } from '@demeter-run/workloads-types';
-import { buildEnvVars, getDependenciesForNetwork, getNetworkFromAnnotations, isCardanoNodeEnabled } from './dependencies';
-import * as nodes from '@demeter-features/cardano-nodes';
-import { getComputeDCUPerMin, getResourcesFromComputeClass, getStorageDcuPerMin, getSTSStatus, listStorage, listStorageWithUsage, loadPods } from '../shared';
+import { API_VERSION, API_GROUP, PLURAL, SINGULAR, KIND, DEFAULT_VSCODE_IMAGE } from './constants';
+import { CustomResource, CustomResourceListResponse, Workspace, StorageClass, Pod, ResourceRequest, CustomResourceResponse } from '@demeter-run/workloads-types';
+import { buildEnvVars, getDependenciesForNetwork, isCardanoNodeEnabled } from '../shared/dependencies';
+import { buildSocatArgs, getComputeDCUPerMin, getNetworkFromAnnotations, getResourcesFromComputeClass, getStorageDcuPerMin, getSTSStatus, listStorage, listStorageWithUsage, loadPods, Size } from '../shared';
+import { buildDefaultEnvVars, buildDnsZone, INITIAL_ENV_VAR_NAMES } from './helpers';
 
-export async function handleResource(ns: string, name: string, spec: DataWorker.Spec, owner: CustomResource<DataWorker.Spec, DataWorker.Status>): Promise<void> {
-    const { apps } = getClients();
+export async function handleResource(ns: string, name: string, spec: Workspace.Spec, owner: CustomResource<Workspace.Spec, Workspace.Status>): Promise<void> {
+    const { apps, core, net } = getClients();
 
     const project = await readProjectUnsecure(namespaceToSlug(owner.metadata?.namespace!));
 
@@ -17,23 +17,26 @@ export async function handleResource(ns: string, name: string, spec: DataWorker.
 
     const network = getNetworkFromAnnotations(spec.annotations) as Network;
     const deps = await getDependenciesForNetwork(project, network);
-    const envVars = await buildEnvVars(deps, network);
+    const depsEnvVars = await buildEnvVars(deps, network);
+    const defaultEnvVars = buildDefaultEnvVars(spec);
     const usesCardanoNode = isCardanoNodeEnabled(deps);
+    const envVars = [...depsEnvVars, ...defaultEnvVars]
     const volumesList = volumes(usesCardanoNode);
     const containerList = containers(spec, envVars, usesCardanoNode);
     try {
         await apps.readNamespacedStatefulSet(name, ns);
-        //@TODO sync 
-        await updateResource(ns, name, spec, containerList, volumesList, envVars);
-        // await apps.replaceNamespacedStatefulSet(name, ns, sts(name, spec, owner, containerList, volumesList));
+        await updateResource(ns, name, spec, containerList, volumesList, owner);
     } catch (err: any) {
         console.log(err?.body)
         await apps.createNamespacedStatefulSet(ns, sts(name, spec, owner, containerList, volumesList));
+        await core.createNamespacedService(ns, service(name, owner));
+        await net.createNamespacedIngress(ns, ingress(name, buildDnsZone(spec), owner));
     }
 }
 
-export async function updateResource(ns: string, name: string, spec: DataWorker.Spec, containers: V1Container[], volumes: V1Volume[] | undefined, envVars: V1EnvVar[]): Promise<void> {
+export async function updateResource(ns: string, name: string, spec: Workspace.Spec, containers: V1Container[], volumes: V1Volume[] | undefined, owner: CustomResource<Workspace.Spec, Workspace.Status>): Promise<void> {
     const { apps, core } = getClients();
+
     // containers should be replaced because of we might need to remove socat and replace ENV VARS
     const containersList = [
         {
@@ -49,12 +52,29 @@ export async function updateResource(ns: string, name: string, spec: DataWorker.
     const patchBody = {
         metadata: {
             labels: {
+                'demeter.run/version': owner.apiVersion!.split('/')[1],
+                'demeter.run/kind': owner.kind!,
                 ...spec.annotations,
             },
+            // needed for migration from old wks
+            ownerReferences: [
+                {
+                    apiVersion: owner.apiVersion!,
+                    kind: owner.kind!,
+                    uid: owner.metadata!.uid!,
+                    name,
+                },
+            ],
         },
         spec: {
-            replicas: spec.enabled ? spec.replicas : 0,
+            replicas: spec.enabled ? 1 : 0,
             template: {
+                metadata: {
+                    labels: {
+                        'demeter.run/version': owner.apiVersion!.split('/')[1],
+                        'demeter.run/kind': owner.kind!,
+                    },
+                },
                 spec: {
                     restartPolicy: 'Always',
                     volumes
@@ -70,6 +90,12 @@ export async function updateResource(ns: string, name: string, spec: DataWorker.
     for (const pvc of pvcs) {
         //  patch pvc
         const pvcPatchBody = {
+            metadata: {
+                labels: {
+                    'demeter.run/kind': KIND,
+                    'demeter.run/version': API_VERSION,
+                },
+            },
             spec: {
                 resources: {
                     requests: {
@@ -84,6 +110,7 @@ export async function updateResource(ns: string, name: string, spec: DataWorker.
         await core.patchNamespacedPersistentVolumeClaim(pvc.metadata?.name!, ns, pvcPatchBody, undefined, undefined, undefined, undefined, undefined, options);
     }
 
+
 }
 
 export async function updateResourceStatus(ns: string, name: string, resource: V1StatefulSet): Promise<void> {
@@ -93,7 +120,7 @@ export async function updateResourceStatus(ns: string, name: string, resource: V
     const storage = await listStorageWithUsage(ns, name, pods);
     const mainContainer = resource.spec?.template.spec?.containers.find(i => i.name === 'main');
 
-    const availableEnvVars = mainContainer?.env?.map(i => i.name);
+    const availableEnvVars = mainContainer?.env?.map(i => i.name).filter(i => !INITIAL_ENV_VAR_NAMES.includes(i));
 
     const runningStatus = getSTSStatus(resource.status!, resource.spec?.replicas!);
 
@@ -129,6 +156,20 @@ export async function updateResourceStatus(ns: string, name: string, resource: V
     }];
 
     await crd.patchNamespacedCustomObjectStatus(API_GROUP, API_VERSION, ns, PLURAL, name, envPatch, undefined, undefined, undefined, { headers: { 'content-type': PatchUtils.PATCH_FORMAT_JSON_PATCH } });
+
+}
+
+export async function updateResourceLastActivity(item: CustomResource<Workspace.Spec, Workspace.Status>, lastActivity: number) {
+    const { crd } = getClients();
+
+    const patch = {
+        status: {
+            lastSeen: lastActivity,
+            lastUpdated: Date.now(),
+        },
+    };
+    const options = { headers: { 'Content-type': PatchUtils.PATCH_FORMAT_JSON_MERGE_PATCH } };
+    await crd.patchNamespacedCustomObjectStatus(API_GROUP, API_VERSION, item.metadata?.namespace!, PLURAL, item.metadata?.name!, patch, undefined, undefined, undefined, options);
 
 }
 
@@ -204,12 +245,7 @@ export async function deletePVCs(ns: string, name: string): Promise<void> {
     }
 }
 
-function buildSocatArgs(spec: DataWorker.Spec) {
-    const nodePrivateDNS = nodes.defaultNodePrivateDns(getNetworkFromAnnotations(spec.annotations));
-    return ['UNIX-LISTEN:/ipc/node.socket,reuseaddr,fork,unlink-early', `TCP-CONNECT:${nodePrivateDNS}:${nodes.N2C_PORT}`]
-}
-
-function sts(name: string, spec: DataWorker.Spec, owner: CustomResource<DataWorker.Spec, DataWorker.Status>, containers: V1Container[], volumes: V1Volume[] | undefined): V1StatefulSet {
+function sts(name: string, spec: Workspace.Spec, owner: CustomResource<Workspace.Spec, Workspace.Status>, containers: V1Container[], volumes: V1Volume[] | undefined): V1StatefulSet {
     return {
         metadata: {
             name,
@@ -228,7 +264,7 @@ function sts(name: string, spec: DataWorker.Spec, owner: CustomResource<DataWork
             ],
         },
         spec: {
-            volumeClaimTemplates: [pvc('storage', spec)],
+            volumeClaimTemplates: [pvc('home', spec)],
             // Auto delete of the PVC is still behind an alpha feature gate (StatefulSetAutoDeletePVC).
             // Once it reaches GA, we un-comment the following lines and rely on k8s for the clean up procedure.
             // In the meantime, we need to manually call the delete step as part of Demeter logic.
@@ -236,7 +272,7 @@ function sts(name: string, spec: DataWorker.Spec, owner: CustomResource<DataWork
             //    whenDeleted: "Delete",
             //    whenScaled: "Retain",
             //},
-            replicas: spec.enabled ? spec.replicas : 0,
+            replicas: spec.enabled ? 1 : 0,
             selector: {
                 matchLabels: {
                     'demeter.run/instance': name,
@@ -273,7 +309,7 @@ function sts(name: string, spec: DataWorker.Spec, owner: CustomResource<DataWork
     };
 }
 
-function pvc(name: string, spec: DataWorker.Spec): V1PersistentVolumeClaim {
+function pvc(name: string, spec: Workspace.Spec): V1PersistentVolumeClaim {
     return {
         metadata: {
             name,
@@ -305,12 +341,19 @@ function podToModel(pod: V1Pod): Pod {
     };
 }
 
-function containers(spec: DataWorker.Spec, envVars: V1EnvVar[], usesCardanoNode: boolean): V1Container[] {
-    const args = spec.args ? spec.args.split(' ') : [];
+function getImageFromSpec(spec: Workspace.Spec): string {
+    if (spec.ide.image) return spec.ide.image;
+    switch (spec.ide.type) {
+        case 'openvscode':
+            return DEFAULT_VSCODE_IMAGE;
+    }
+}
+
+function containers(spec: Workspace.Spec, envVars: V1EnvVar[], usesCardanoNode: boolean): V1Container[] {
     const volumeMounts: V1VolumeMount[] = [
         {
-            name: 'storage',
-            mountPath: '/var/data',
+            name: 'home',
+            mountPath: '/config',
         },
     ]
 
@@ -324,12 +367,20 @@ function containers(spec: DataWorker.Spec, envVars: V1EnvVar[], usesCardanoNode:
     const containers: V1Container[] = [
         {
             name: 'main',
+            ports: [{ containerPort: 8443, name: 'webui' }],
             resources: getResourcesFromComputeClass(spec.computeClass),
-            image: spec.image,
-            imagePullPolicy: 'IfNotPresent',
+            image: getImageFromSpec(spec),
+            imagePullPolicy: 'Always',
             volumeMounts,
-            args,
-            env: [...envVars, ...spec.envVars]
+            env: envVars,
+            readinessProbe: {
+                tcpSocket: {
+                    port: 8443,
+                },
+                initialDelaySeconds: 20,
+                failureThreshold: 20,
+                periodSeconds: 10,
+            },
         }
     ];
 
@@ -342,7 +393,7 @@ function containers(spec: DataWorker.Spec, envVars: V1EnvVar[], usesCardanoNode:
                     runAsUser: 1000,
                     runAsGroup: 1000,
                 },
-                args: [...buildSocatArgs(spec)],
+                args: [...buildSocatArgs(spec.annotations)],
                 volumeMounts: [
                     {
                         name: 'ipc',
@@ -367,8 +418,119 @@ function volumes(usesCardanoNode: boolean): V1Volume[] | undefined {
     }
 }
 
+function ingress(name: string, clusterDnsZone: string, owner: CustomResource<Workspace.Spec, Workspace.Status>): V1Ingress {
+    return {
+        metadata: {
+            name,
+            labels: {
+                'demeter.run/instance': name,
+            },
+            annotations: {
+                'cert-manager.io/cluster-issuer': 'letsencrypt',
+                'nginx.ingress.kubernetes.io/proxy-read-timeout': '3600',
+                'nginx.ingress.kubernetes.io/proxy-send-timeout': '3600',
+            },
+            ownerReferences: [
+                {
+                    apiVersion: owner.apiVersion!,
+                    kind: owner.kind!,
+                    uid: owner.metadata!.uid!,
+                    name,
+                },
+            ],
+        },
+        spec: {
+            ingressClassName: 'nginx',
+            rules: [
+                {
+                    host: `wks-${name}.${clusterDnsZone}`,
+                    http: {
+                        paths: [
+                            {
+                                pathType: 'Prefix',
+                                path: '/',
+                                backend: {
+                                    service: {
+                                        name,
+                                        port: {
+                                            number: 3000,
+                                        },
+                                    },
+                                },
+                            },
+                        ],
+                    },
+                },
+            ],
+            tls: [
+                {
+                    hosts: [`*.${clusterDnsZone}`],
+                },
+            ],
+        },
+    };
+}
+
+function service(name: string, owner: CustomResource<Workspace.Spec, Workspace.Status>): V1Service {
+    return {
+        metadata: {
+            name,
+            labels: {
+                'demeter.run/instance': name,
+            },
+            ownerReferences: [
+                {
+                    apiVersion: owner.apiVersion!,
+                    kind: owner.kind!,
+                    uid: owner.metadata!.uid!,
+                    name,
+                },
+            ],
+        },
+        spec: {
+            ports: [
+                {
+                    name: 'webui',
+                    port: 3000,
+                    targetPort: 8443,
+                    protocol: 'TCP',
+                },
+            ],
+            type: 'ClusterIP',
+            selector: {
+                'demeter.run/instance': name,
+            },
+        },
+    };
+}
+
+
+
+export async function patchResource(ns: string, name: string, spec: Partial<Workspace.Spec>) {
+    const { crd } = getClients();
+
+    const patch = {
+        spec,
+    };
+
+    const options = { headers: { 'Content-type': PatchUtils.PATCH_FORMAT_JSON_MERGE_PATCH } };
+    const res = await crd.patchNamespacedCustomObject(
+        API_GROUP,
+        API_VERSION,
+        ns,
+        PLURAL,
+        name,
+        patch,
+        undefined,
+        undefined,
+        undefined,
+        options,
+    );
+    return res.body as CustomResource<Workspace.Spec, Workspace.Status>;
+}
+
 async function loadResource(ns: string, name: string) {
     const { crd } = getClients();
-    const res = await crd.getNamespacedCustomObject(API_GROUP, API_VERSION, ns, PLURAL, name) as CustomResourceResponse<DataWorker.Spec, DataWorker.Status>;
+    const res = await crd.getNamespacedCustomObject(API_GROUP, API_VERSION, ns, PLURAL, name) as CustomResourceResponse<Workspace.Spec, Workspace.Status>;
     return res.body;
 }

@@ -1,6 +1,7 @@
 import express from 'express';
 import { register } from './metrics/prometheus';
 import startDataWorker from './data-workers';
+import startWorkspace from './workspaces';
 import collectMetrics from './metrics';
 import { registerServices } from './services';
 
@@ -21,4 +22,5 @@ server.get('/metrics', async (req, res) => {
 
 registerServices();
 startDataWorker();
+startWorkspace();
 collectMetrics();

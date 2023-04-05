@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/no-non-null-asserted-optional-chain */
 import { namespaceToSlug } from '@demeter-sdk/framework';
 import { ageGauge, dcuCounter, restartCount, statusGauge } from './prometheus';
-import { CustomResource, ISpec, IStatus } from '@demeter-run/workloads-types';
+import { CustomResource, GenericWorkload, MetricsStatus } from '@demeter-run/workloads-types';
 
 const MAX_SCRAPE_DELTA_S = 30;
 const DESIRED_INTERVAL = process.env.SCRAPE_INTERVAL_S ? Number(process.env.SCRAPE_INTERVAL_S) : MAX_SCRAPE_DELTA_S;
 
-interface StatusResource extends CustomResource<ISpec, IStatus> {
+interface StatusResource extends CustomResource<GenericWorkload, MetricsStatus> {
   lastChecked: number;
   upTime: number;
 }
@@ -19,19 +19,19 @@ export const STATUS: Record<string, number> = {
   syncing: 1,
 };
 
-function buildPayload<Spec, Status>(item: CustomResource<Spec, Status>) {
+export function buildPayload(item: StatusResource) {
   return { service: `${item.kind}-${item.metadata?.name}`, project: namespaceToSlug(item.metadata?.namespace!), service_type: item.apiVersion, tenancy: 'project' };
 }
 
-function getDiffInMinutes(start: number, end: number) {
+export function getDiffInMinutes(start: number, end: number) {
   return Math.min(start - end, 2 * DESIRED_INTERVAL) / 60;
 }
 
-function trackStatus<Spec extends ISpec, Status extends IStatus>(item: CustomResource<Spec, Status>) {
+export function trackStatus(item: StatusResource) {
   statusGauge.set(buildPayload(item), STATUS[item.status.runningStatus]);
 }
 
-function trackComputeDCU(item: StatusResource, currentUptime: number) {
+export function trackComputeDCU(item: StatusResource, currentUptime: number) {
   if (cache.has(item.metadata?.name!)) {
     const cacheUptime = cache.get(item.metadata?.name!)!.upTime;
     if (cacheUptime) {
@@ -47,7 +47,7 @@ function trackComputeDCU(item: StatusResource, currentUptime: number) {
   }
 }
 
-function trackStorageDCU(item: StatusResource) {
+export function trackStorageDCU(item: StatusResource) {
   if (cache.has(item.metadata?.name!)) {
     const lastChecked = cache.get(item.metadata?.name!)!.lastChecked;
     if (lastChecked) {
@@ -63,7 +63,7 @@ function trackStorageDCU(item: StatusResource) {
   }
 }
 
-function trackRestartCount(item: StatusResource) {
+export function trackRestartCount(item: StatusResource) {
   if (cache.has(item.metadata?.name!)) {
     const cachedItem = cache.get(item.metadata?.name!);
     if (cachedItem?.status.runningStatus === 'paused' || cachedItem?.status.runningStatus === 'provisioning') {
@@ -73,7 +73,7 @@ function trackRestartCount(item: StatusResource) {
 }
 
 // The trackAge function also tracks Compute DCU since it needs the uptime as well;
-function trackAge(item: StatusResource): number | null {
+export function trackAge(item: StatusResource): number | null {
   const startTime = item.status.startTime;
   if (!startTime) return null;
   const uptime = Math.round((Date.now() - startTime) / 1000);
@@ -84,17 +84,15 @@ function trackAge(item: StatusResource): number | null {
 
 const cache: Map<string, StatusResource> = new Map();
 
-function updateCache(item: StatusResource) {
+export function updateCache(item: StatusResource) {
   cache.set(item.metadata?.name!, item)
 }
 
-const STORAGE_KINDS = ['DataWorker'];
-
-export async function collectWorkloadMetrics<Spec extends ISpec, Status extends IStatus>(item: CustomResource<Spec, Status>) {
+export async function collectWorkloadMetrics(item: CustomResource<GenericWorkload, MetricsStatus>) {
   // we need a lastChecked to compute storage DCU
   const status = item as unknown as StatusResource;
   status.lastChecked = Date.now();
-  trackStatus(item);
+  trackStatus(status);
   if (item.status.storageDCUPerMin) {
     trackStorageDCU(status);
   }

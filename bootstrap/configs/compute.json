@@ -1,0 +1,98 @@
+{
+  "gp1.x86.nano": {
+      "name": "General Purpose 1 - x86 - nano",
+      "requests": {
+          "cpu": "100m",
+          "memory": "500Mi"
+      },
+      "limits": {
+          "cpu": "250m",
+          "memory": "500Mi"
+      },
+      "dcu": 154
+  },
+  "gp1.x86.micro": {
+      "name": "General Purpose 1 - x86 - micro",
+      "requests": {
+          "cpu": "100m",
+          "memory": "1Gi"
+      },
+      "limits": {
+          "cpu": "500m",
+          "memory": "1Gi"
+      },
+      "dcu": 308
+  },
+  "gp1.x86.small": {
+      "name": "General Purpose 1 - x86 - small",
+      "requests": {
+          "cpu": "100m",
+          "memory": "2Gi"
+      },
+      "limits": {
+          "cpu": "1",
+          "memory": "2Gi"
+      },
+      "dcu": 729
+  },
+  "gp1.x86.medium": {
+      "name": "General Purpose 1 - x86 - medium",
+      "requests": {
+          "cpu": "100m",
+          "memory": "4Gi"
+      },
+      "limits": {
+          "cpu": "2",
+          "memory": "4Gi"
+      },
+      "dcu": 1458
+  },
+  "gp1.x86.large": {
+      "name": "General Purpose 1 - x86 - large",
+      "requests": {
+          "cpu": "100m",
+          "memory": "8Gi"
+      },
+      "limits": {
+          "cpu": "4",
+          "memory": "8Gi"
+      },
+      "dcu": 2100
+  },
+  "mi1.x86.small": {
+      "name": "Memory Intensive 1 - x86 - small",
+      "requests": {
+          "cpu": "100m",
+          "memory": "4Gi"
+      },
+      "limits": {
+          "cpu": "1",
+          "memory": "4Gi"
+      },
+      "dcu": 1458
+  },
+  "m1.x86.medium": {
+      "name": "Memory Intensive 1 - x86 - medium",
+      "requests": {
+          "cpu": "100m",
+          "memory": "8Gi"
+      },
+      "limits": {
+          "cpu": "2",
+          "memory": "8Gi"
+      },
+      "dcu": 2916
+  },
+  "m1.x86.large": {
+      "name": "Memory Intensive 1 - x86 - large",
+      "requests": {
+          "cpu": "100m",
+          "memory": "16Gi"
+      },
+      "limits": {
+          "cpu": "4",
+          "memory": "16Gi"
+      },
+      "dcu": 5832
+  }
+}

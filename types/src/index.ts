@@ -2,6 +2,7 @@ import { KubernetesObject, V1ContainerStatus, V1ListMeta, V1PersistentVolumeClai
 import { IncomingMessage } from 'http';
 
 export * as DataWorker from './data-worker';
+export * as Workspace from './workspace';
 
 export type WorkloadStatus = 'paused' | 'running' | 'provisioning' | 'syncing' | 'error';
 
@@ -18,30 +19,21 @@ export type StorageItem = {
   inUse: boolean,
 }
 
-export interface ISpec {
+export type GenericWorkload = {
   givenName: string;
-  image: string;
-  replicas: number;
   enabled: boolean;
-  args: string;
-  envVars: EnvVar[];
   annotations: Record<string, string>;
-  tenancy: 'cluster' | 'project' | 'proxy'
-  resources: {
-    requests: ResourceRequest,
-    limits: ResourceRequest
-  }
-  [k: string]: unknown
+  computeClass: string;
 }
 
-export interface IStatus {
+
+export type MetricsStatus = {
   runningStatus: WorkloadStatus;
   availableReplicas: number;
   observedGeneration: number;
-  availableEnvVars: string[];
   startTime: number;
   computeDCUPerMin: number;
-  [k: string]: unknown
+  storageDCUPerMin: number;
 }
 
 export type ResourceRequest = {

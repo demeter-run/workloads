@@ -1,19 +1,19 @@
-resource "kubernetes_manifest" "dataworkers" {
+resource "kubernetes_manifest" "workspaces" {
   manifest = {
     "apiVersion" = "apiextensions.k8s.io/v1"
     "kind" = "CustomResourceDefinition"
     "metadata" = {
-      "name" = "dataworkers.demeter.run"
+      "name" = "workspaces.demeter.run"
     }
     "spec" = {
       "group" = "demeter.run"
       "names" = {
-        "kind" = "DataWorker"
-        "plural" = "dataworkers"
+        "kind" = "Workspace"
+        "plural" = "workspaces"
         "shortNames" = [
-          "dwk",
+          "wks",
         ]
-        "singular" = "dataworker"
+        "singular" = "workspace"
       }
       "scope" = "Namespaced"
       "versions" = [
@@ -25,9 +25,9 @@ resource "kubernetes_manifest" "dataworkers" {
               "type" = "boolean"
             },
             {
-              "jsonPath" = ".spec.replicas"
-              "name" = "Replicas"
-              "type" = "number"
+              "jsonPath" = ".status.runningStatus"
+              "name" = "Status"
+              "type" = "string"
             },
             {
               "jsonPath" = ".spec.computeClass"
@@ -65,37 +65,51 @@ resource "kubernetes_manifest" "dataworkers" {
                       "type" = "object"
                       "x-kubernetes-preserve-unknown-fields" = true
                     }
-                    "args" = {
-                      "type" = "string"
-                    }
                     "computeClass" = {
                       "type" = "string"
                     }
                     "enabled" = {
                       "type" = "boolean"
                     }
-                    "envVars" = {
+                    "extras" = {
                       "items" = {
-                        "properties" = {
-                          "name" = {
-                            "type" = "string"
-                          }
-                          "value" = {
-                            "type" = "string"
-                          }
-                        }
-                        "type" = "object"
+                        "type" = "string"
                       }
                       "type" = "array"
                     }
                     "givenName" = {
                       "type" = "string"
                     }
-                    "image" = {
-                      "type" = "string"
+                    "ide" = {
+                      "properties" = {
+                        "authToken" = {
+                          "type" = "string"
+                        }
+                        "image" = {
+                          "type" = "string"
+                        }
+                        "type" = {
+                          "type" = "string"
+                        }
+                      }
+                      "type" = "object"
                     }
-                    "replicas" = {
-                      "type" = "number"
+                    "sourceCode" = {
+                      "properties" = {
+                        "authorEmail" = {
+                          "type" = "string"
+                        }
+                        "authorName" = {
+                          "type" = "string"
+                        }
+                        "branch" = {
+                          "type" = "string"
+                        }
+                        "url" = {
+                          "type" = "string"
+                        }
+                      }
+                      "type" = "object"
                     }
                     "storage" = {
                       "properties" = {
@@ -108,10 +122,6 @@ resource "kubernetes_manifest" "dataworkers" {
                         }
                       }
                       "type" = "object"
-                    }
-                    "tenancy" = {
-                      "pattern" = "^(\\b(cluster|project|proxy)\\b)$"
-                      "type" = "string"
                     }
                   }
                   "type" = "object"
@@ -130,8 +140,20 @@ resource "kubernetes_manifest" "dataworkers" {
                     "computeDCUPerMin" = {
                       "type" = "number"
                     }
+                    "healthUrl" = {
+                      "type" = "string"
+                    }
+                    "lastSeen" = {
+                      "type" = "number"
+                    }
+                    "lastUpdated" = {
+                      "type" = "number"
+                    }
                     "observedGeneration" = {
                       "type" = "number"
+                    }
+                    "openUrl" = {
+                      "type" = "string"
                     }
                     "runningStatus" = {
                       "type" = "string"
