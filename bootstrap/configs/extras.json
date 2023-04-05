@@ -6,7 +6,7 @@
         "description": "Cardano CLI binaries",
         "vsCodeExtensions": [],
         "dockerMods": ["ghcr.io/demeter-run/docker-mods-cardano-bin:latest"],
-        "tags": ["cardano", "extras"], 
+        "tags": ["cardano", "extras"],
         "logo": "/cardano-white.png"
     },
     {

@@ -12,18 +12,18 @@ variable "namespace" {
 }
 
 locals {
-  cm_name = "workloads-configs"
+  cm_name = "workloads"
 }
 
-resource "kubernetes_config_map" "workloads-configs" {
+resource "kubernetes_config_map" "workloads" {
   metadata {
     namespace = var.namespace
     name      = local.cm_name
   }
 
   data = {
-    "compute.json"         = "${file("${path.module}/compute.json")}"
-    "extras.json" = "${file("${path.module}/extras.json")}"
+    "compute.json" = "${file("${path.module}/compute.json")}"
+    "extras.json"  = "${file("${path.module}/extras.json")}"
   }
 }
 
