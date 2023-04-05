@@ -29,7 +29,14 @@ export const restartCount = new client.Counter({
   labelNames: LABEL_NAMES
 });
 
+export const lastActivityGauge = new client.Gauge({
+  name: METRIC_NAME.lastActivity,
+  help: METRIC_NAME.lastActivity,
+  labelNames: LABEL_NAMES
+});
+
 register.registerMetric(dcuCounter);
 register.registerMetric(statusGauge);
 register.registerMetric(ageGauge);
 register.registerMetric(restartCount);
+register.registerMetric(lastActivityGauge);

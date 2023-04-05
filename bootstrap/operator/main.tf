@@ -4,18 +4,27 @@ variable "image_tag" {}
 
 variable "cluster_name" {}
 
+variable "uptime_interval" {
+  description = "the inverval for checking workspace uptime and decide if it should be turned off"
+  default     = "300"
+}
+
+variable "workspace_expire" {
+  description = "the value in seconds after a workspace is considered as expired."
+  default     = "1800" // 30 minutes
+}
+
+variable "pause_expired_workspaces" {
+  description = "Wether expired workspaces should be paused or not"
+  default     = "false"
+}
+
 variable "scrape_interval" {
   description = "the inverval for polling workspaces data (in seconds)"
   default     = "30"
 }
 variable "per_min_dcus" {
   default = {
-    "compute" : {
-      "nano" : 154,
-      "small" : 308,
-      "medium": 729,
-      "large": 1458,
-    },
     "storage" : {
       "fast" : 16,
       "gp3" : 8
@@ -77,26 +86,6 @@ resource "kubernetes_deployment_v1" "operator" {
           }
 
           env {
-            name  = "NANO_COMPUTE_PER_MIN_DCUS"
-            value = var.per_min_dcus.compute.nano
-          }
-
-          env {
-            name  = "SMALL_COMPUTE_PER_MIN_DCUS"
-            value = var.per_min_dcus.compute.small
-          }
-
-          env {
-            name  = "MEDIUM_COMPUTE_PER_MIN_DCUS"
-            value = var.per_min_dcus.compute.medium
-          }
-
-          env {
-            name  = "LARGE_COMPUTE_PER_MIN_DCUS"
-            value = var.per_min_dcus.compute.large
-          }
-
-          env {
             name  = "GP3_STORAGE_PER_GB_PER_MIN_DCUS"
             value = var.per_min_dcus.storage.gp3
           }
@@ -104,6 +93,20 @@ resource "kubernetes_deployment_v1" "operator" {
           env {
             name  = "FAST_STORAGE_PER_GB_PER_MIN_DCUS"
             value = var.per_min_dcus.storage.fast
+          }
+
+          env {
+            name  = "UPTIME_INTERVAL_S"
+            value = var.uptime_interval
+          }
+
+          env {
+            name  = "EXPIRE_WORKSPACE_S"
+            value = var.workspace_expire
+          }
+          env {
+            name  = "PAUSE_EXPIRED_WORKSPACES"
+            value = var.pause_expired_workspaces
           }
 
           resources {
@@ -120,6 +123,18 @@ resource "kubernetes_deployment_v1" "operator" {
             name           = "metrics"
             container_port = 9946
             protocol       = "TCP"
+          }
+
+          volume_mount {
+            mount_path = "/config"
+            name       = "config"
+          }
+        }
+
+        volume {
+          name = "config"
+          config_map {
+            name = module.configs.cm_name
           }
         }
       }

@@ -1,0 +1,11 @@
+export const API_GROUP = 'demeter.run';
+export const SINGULAR = 'workspace';
+export const PLURAL = 'workspaces';
+export const CUSTOM_API_NAME = `${PLURAL}.${API_GROUP}`;
+export const API_VERSION = 'v1alpha1';
+export const KIND = 'Workspace';
+export const NAMESPACE = 'ftr-workloads-v0';
+export const VSCODE_BASE_IMAGE = 'ghcr.io/demeter-run/workspace-haskell';
+export const VSCODE_BASE_IMAGE_TAG = '5b806406f2a8315c4ec9f44cdcda3ed959d2eb57';
+export const DEFAULT_VSCODE_IMAGE = `${VSCODE_BASE_IMAGE}:${VSCODE_BASE_IMAGE_TAG}`;
+export const CLUSTER_DNS_ZONE = process.env.CLUSTER_NAME && process.env.DNS_ZONE ? `${process.env.CLUSTER_NAME}.${process.env.DNS_ZONE}` : 'us1.demeter.builders';

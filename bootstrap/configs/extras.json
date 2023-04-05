@@ -1,0 +1,102 @@
+[
+    {
+        "id": "cardano-bin-2023-03",
+        "weight": 1,
+        "name": "Cardano Binaries",
+        "description": "Cardano CLI binaries",
+        "vsCodeExtensions": [],
+        "dockerMods": ["ghcr.io/demeter-run/docker-mods-cardano-bin:latest"],
+        "tags": ["cardano", "extras"], 
+        "logo": "/cardano-white.png"
+    },
+    {
+        "id": "cabal-cache-2023-03",
+        "weight": 2,
+        "name": "Cabal Cache",
+        "description": "The latest Cardano derivations from IOHK Nix cache.",
+        "vsCodeExtensions": [],
+        "dockerMods": ["ghcr.io/demeter-run/docker-mods-cabal-cache:latest"],
+        "tags": ["cardano", "extras"],
+        "logo": "/haskell.png"
+    },
+    {
+        "id": "nix-2023-03",
+        "weight": 3,
+        "name": "Nix",
+        "description": "Binaries and VS Code extensions.",
+        "vsCodeExtensions": ["arrterian.nix-env-selector", "bbenoist.nix", "jnoortheen.nix-ide"],
+        "dockerMods": ["ghcr.io/demeter-run/docker-mods-nix:latest"],
+        "logo": "/nix.png",
+        "tags": ["cardano", "extras"]
+    },
+    {
+        "id": "haskell-2023-03",
+        "weight": 1,
+        "name": "Haskell",
+        "description": "Good for starting from scratch with the Haskell language.",
+        "vsCodeExtensions": ["haskell.haskell"],
+        "dockerMods": [],
+        "tags": ["language"],
+        "logo": "/haskell.png"
+    },
+    {
+        "id": "nvm-2023-03",
+        "weight": 2,
+        "name": "NodeJS",
+        "description": "NodeJS + Typescript. Good for creating frontends using Berry-Pool's Lucid framework.",
+        "vsCodeExtensions": [],
+        "dockerMods": ["ghcr.io/demeter-run/docker-mods-nvm:latest"],
+        "tags": ["language"],
+        "logo": "/typescript.png"
+    },
+    {
+        "id": "rust-2023-03",
+        "weight": 3,
+        "name": "Rust",
+        "description": "Rust + Cargo. Good for creating projects using Pallas building blocks.",
+        "vsCodeExtensions": ["matklad.rust-analyzer"],
+        "dockerMods": ["ghcr.io/demeter-run/docker-mods-rust:latest"],
+        "tags": ["language"],
+        "logo": "/rust.png"
+    },
+    {
+        "id": "golang-2023-03",
+        "weight": 4,
+        "name": "Golang",
+        "description": "Good for creating projects using CloudStruct Ouroboros library.",
+        "vsCodeExtensions": ["golang.Go"],
+        "dockerMods": ["linuxserver/mods:code-server-golang"],
+        "tags": ["language"],
+        "logo": "/golang.png"
+    },
+    {
+        "id": "python-2023-03",
+        "weight": 5,
+        "name": "Python",
+        "description": "Good for creating projects using the PyCardano framework.",
+        "vsCodeExtensions": ["ms-python.python"],
+        "dockerMods": ["linuxserver/mods:code-server-python3"],
+        "tags": ["language"],
+        "logo": "/python.png"
+    },
+    {
+        "id": "java-2023-03",
+        "weight": 6,
+        "name": "Java",
+        "description": "OpenJDK 17 + Gradle + Maven. Good for creating projects using the Java language.",
+        "vsCodeExtensions": ["vscjava.vscode-java-pack"],
+        "dockerMods": ["ghcr.io/demeter-run/docker-mods-java-sdk-man:latest"],
+        "tags": ["language"],
+        "logo": "/java.png"
+    },
+    {
+        "id": "jupyter-2023-03",
+        "weight": 4,
+        "name": "Jupyter Notebook",
+        "description": "VS Code extensions.",
+        "vsCodeExtensions": ["ms-toolsai.vscode-jupyter-powertoys"],
+        "dockerMods": [],
+        "tags": ["extras"],
+        "logo": "/jupyter-2.png"
+    }
+]

@@ -1,15 +1,15 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: dataworkers.demeter.run
+  name: workspaces.demeter.run
 spec:
   group: demeter.run
   names:
-    kind: DataWorker
-    plural: dataworkers
+    kind: Workspace
+    plural: workspaces
     shortNames:
-      - dwk
-    singular: dataworker
+      - wks
+    singular: workspace
   scope: Namespaced
   versions:
     - name: v1alpha1
@@ -22,26 +22,32 @@ spec:
               properties:
                 givenName:
                   type: string
-                image:
-                  type: string
-                replicas:
-                  type: number
-                enabled:
-                  type: boolean
-                args:
-                  type: string
-                tenancy:
-                  type: string 
-                  pattern: ^(\b(cluster|project|proxy)\b)$
-                envVars:
+                ide:
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                    image:
+                      type: string
+                    authToken:
+                      type: string
+                extras:
                   type: array
                   items:
-                    type: object
-                    properties:
-                      name:
-                        type: string
-                      value:
-                        type: string
+                    type: string
+                sourceCode:
+                  type: object
+                  properties:
+                    url:
+                      type: string
+                    branch:
+                      type: string
+                    authorEmail:
+                      type: string
+                    authorName:
+                      type: string
+                enabled:
+                  type: boolean
                 annotations:
                   type: object
                   x-kubernetes-preserve-unknown-fields: true
@@ -88,14 +94,22 @@ spec:
                   type: number
                 computeDCUPerMin:
                   type: number
+                lastSeen:
+                  type: number
+                lastUpdated:
+                  type: number
+                openUrl:
+                  type: string
+                healthUrl:
+                  type: string
 
       additionalPrinterColumns:
         - name: Enabled
           type: boolean
           jsonPath: .spec.enabled
-        - name: Replicas
-          type: number
-          jsonPath: .spec.replicas
+        - name: Status
+          type: string
+          jsonPath: .status.runningStatus
         - name: Compute Class
           type: string
           jsonPath: .spec.computeClass
