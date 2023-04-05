@@ -23,6 +23,12 @@ variable "scrape_interval" {
   description = "the inverval for polling workspaces data (in seconds)"
   default     = "30"
 }
+
+variable "config_map_name" {
+  description = "the name of the config map holding values for compute, extras, etc"
+  default     = "workloads"
+}
+
 variable "per_min_dcus" {
   default = {
     "storage" : {
@@ -134,7 +140,7 @@ resource "kubernetes_deployment_v1" "operator" {
         volume {
           name = "config"
           config_map {
-            name = module.configs.cm_name
+            name = var.config_map_name
           }
         }
       }
