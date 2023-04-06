@@ -16,7 +16,7 @@ variable "workspace_expire" {
 
 variable "pause_expired_workspaces" {
   description = "Wether expired workspaces should be paused or not"
-  default     = "false"
+  default     = "true"
 }
 
 variable "scrape_interval" {
@@ -132,7 +132,7 @@ resource "kubernetes_deployment_v1" "operator" {
           }
 
           volume_mount {
-            mount_path = "/config"
+            mount_path = "/app/config"
             name       = "config"
           }
         }
