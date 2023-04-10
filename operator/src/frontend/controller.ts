@@ -1,11 +1,11 @@
-import { CustomResource, Backend } from '@demeter-run/workloads-types';
+import { CustomResource, Frontend } from '@demeter-run/workloads-types';
 import Operator, { ResourceEventType, ResourceEvent } from '@dot-i/k8s-operator';
 import { API_VERSION, API_GROUP, PLURAL } from './constants';
 import { handleResource } from './handlers';
 
 const RUNNING_STATUSES = ['running', 'provisioning', 'syncing', 'error']
 
-export default class BackendOperator extends Operator {
+export default class FrontendOperator extends Operator {
     constructor() {
         super(/* pass in optional logger*/);
     }
@@ -35,7 +35,7 @@ export default class BackendOperator extends Operator {
     }
 
     private async resourceCreated(e: ResourceEvent) {
-        const object = e.object as CustomResource<Backend.Spec, Backend.Status>;
+        const object = e.object as CustomResource<Frontend.Spec, Frontend.Status>;
         const { metadata, spec, status } = object;
         console.log('RESOURCE CREATED', e.meta);
 
@@ -53,7 +53,7 @@ export default class BackendOperator extends Operator {
     }
 
     private async resourceModified(e: ResourceEvent) {
-        const object = e.object as CustomResource<Backend.Spec, Backend.Status>;
+        const object = e.object as CustomResource<Frontend.Spec, Frontend.Status>;
         const { metadata, status, spec } = object;
         console.log('UPDATING STATUS');
         if ((!spec.enabled && RUNNING_STATUSES.includes(status.runningStatus)) || (spec.enabled && status.runningStatus === 'paused')) {
