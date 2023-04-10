@@ -1,4 +1,4 @@
-import { collectClusterMetrics as dataWorkerMetrics } from "../data-workers/metrics";
+import { collectClusterMetrics as backendWithStorageMetrics } from "../backend-with-storage/metrics";
 import { collectClusterMetrics as workspaceMetrics } from "../workspaces/metrics";
 
 import { executeRecurrentTask } from "../utils";
@@ -7,7 +7,7 @@ const SCRAPE_DESIRED_INTERVAL = process.env.SCRAPE_INTERVAL_S ? Number(process.e
 
 
 export default function collectMetrics() {
-  executeRecurrentTask(dataWorkerMetrics, { label: 'dwk-metrics', desiredInterval: SCRAPE_DESIRED_INTERVAL, minInterval: SCRAPE_MIN_INTERVAL });
+  executeRecurrentTask(backendWithStorageMetrics, { label: 'bws-metrics', desiredInterval: SCRAPE_DESIRED_INTERVAL, minInterval: SCRAPE_MIN_INTERVAL });
   executeRecurrentTask(workspaceMetrics, { label: 'wks-metrics', desiredInterval: SCRAPE_DESIRED_INTERVAL, minInterval: SCRAPE_MIN_INTERVAL });
 }
 

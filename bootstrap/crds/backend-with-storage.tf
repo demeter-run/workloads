@@ -1,19 +1,19 @@
-resource "kubernetes_manifest" "dataworkers" {
+resource "kubernetes_manifest" "backendswithstorage" {
   manifest = {
     "apiVersion" = "apiextensions.k8s.io/v1"
     "kind" = "CustomResourceDefinition"
     "metadata" = {
-      "name" = "dataworkers.demeter.run"
+      "name" = "backendswithstorage.demeter.run"
     }
     "spec" = {
       "group" = "demeter.run"
       "names" = {
-        "kind" = "DataWorker"
-        "plural" = "dataworkers"
+        "kind" = "BackendWithStorage"
+        "plural" = "backendswithstorage"
         "shortNames" = [
-          "dwk",
+          "bws",
         ]
-        "singular" = "dataworker"
+        "singular" = "backendwithstorage"
       }
       "scope" = "Namespaced"
       "versions" = [
