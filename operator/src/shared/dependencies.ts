@@ -4,6 +4,7 @@ import * as nodes from '@demeter-features/cardano-nodes';
 import { getService } from "../services";
 import { getNetworkFromAnnotations } from ".";
 
+
 export async function getDependenciesForNetwork(project: ProjectSpec, network: Network) {
   const deps = await listDependencies(project);
 

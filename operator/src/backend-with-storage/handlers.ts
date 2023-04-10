@@ -1,12 +1,12 @@
 import { V1StatefulSet, V1PersistentVolumeClaim, PatchUtils, V1Pod, V1Container, V1EnvVar, V1Volume, V1VolumeMount } from '@kubernetes/client-node';
 import { getClients, slugToNamespace, readProjectUnsecure, Network, namespaceToSlug } from '@demeter-sdk/framework';
 import { API_VERSION, API_GROUP, PLURAL, SINGULAR, KIND } from './constants';
-import { CustomResource, CustomResourceResponse, DataWorker, Pod, StorageClass } from '@demeter-run/workloads-types';
-import { buildEnvVars, getDependenciesForNetwork, getNetworkFromAnnotations, isCardanoNodeEnabled } from './dependencies';
+import { CustomResource, CustomResourceResponse, BackendWithStorage, Pod, StorageClass } from '@demeter-run/workloads-types';
+import { buildEnvVars, getDependenciesForNetwork, isCardanoNodeEnabled } from '../shared/dependencies';
 import * as nodes from '@demeter-features/cardano-nodes';
-import { getComputeDCUPerMin, getResourcesFromComputeClass, getStorageDcuPerMin, getSTSStatus, listStorage, listStorageWithUsage, loadPods } from '../shared';
+import { getComputeDCUPerMin, getNetworkFromAnnotations, getResourcesFromComputeClass, getStorageDcuPerMin, getSTSStatus, listStorage, listStorageWithUsage, loadPods } from '../shared';
 
-export async function handleResource(ns: string, name: string, spec: DataWorker.Spec, owner: CustomResource<DataWorker.Spec, DataWorker.Status>): Promise<void> {
+export async function handleResource(ns: string, name: string, spec: BackendWithStorage.Spec, owner: CustomResource<BackendWithStorage.Spec, BackendWithStorage.Status>): Promise<void> {
     const { apps } = getClients();
 
     const project = await readProjectUnsecure(namespaceToSlug(owner.metadata?.namespace!));
@@ -32,7 +32,7 @@ export async function handleResource(ns: string, name: string, spec: DataWorker.
     }
 }
 
-export async function updateResource(ns: string, name: string, spec: DataWorker.Spec, containers: V1Container[], volumes: V1Volume[] | undefined, envVars: V1EnvVar[]): Promise<void> {
+export async function updateResource(ns: string, name: string, spec: BackendWithStorage.Spec, containers: V1Container[], volumes: V1Volume[] | undefined, envVars: V1EnvVar[]): Promise<void> {
     const { apps, core } = getClients();
     // containers should be replaced because of we might need to remove socat and replace ENV VARS
     const containersList = [
@@ -204,12 +204,12 @@ export async function deletePVCs(ns: string, name: string): Promise<void> {
     }
 }
 
-function buildSocatArgs(spec: DataWorker.Spec) {
+function buildSocatArgs(spec: BackendWithStorage.Spec) {
     const nodePrivateDNS = nodes.defaultNodePrivateDns(getNetworkFromAnnotations(spec.annotations));
     return ['UNIX-LISTEN:/ipc/node.socket,reuseaddr,fork,unlink-early', `TCP-CONNECT:${nodePrivateDNS}:${nodes.N2C_PORT}`]
 }
 
-function sts(name: string, spec: DataWorker.Spec, owner: CustomResource<DataWorker.Spec, DataWorker.Status>, containers: V1Container[], volumes: V1Volume[] | undefined): V1StatefulSet {
+function sts(name: string, spec: BackendWithStorage.Spec, owner: CustomResource<BackendWithStorage.Spec, BackendWithStorage.Status>, containers: V1Container[], volumes: V1Volume[] | undefined): V1StatefulSet {
     return {
         metadata: {
             name,
@@ -273,7 +273,7 @@ function sts(name: string, spec: DataWorker.Spec, owner: CustomResource<DataWork
     };
 }
 
-function pvc(name: string, spec: DataWorker.Spec): V1PersistentVolumeClaim {
+function pvc(name: string, spec: BackendWithStorage.Spec): V1PersistentVolumeClaim {
     return {
         metadata: {
             name,
@@ -305,7 +305,7 @@ function podToModel(pod: V1Pod): Pod {
     };
 }
 
-function containers(spec: DataWorker.Spec, envVars: V1EnvVar[], usesCardanoNode: boolean): V1Container[] {
+function containers(spec: BackendWithStorage.Spec, envVars: V1EnvVar[], usesCardanoNode: boolean): V1Container[] {
     const args = spec.args ? spec.args.split(' ') : [];
     const volumeMounts: V1VolumeMount[] = [
         {
@@ -369,6 +369,6 @@ function volumes(usesCardanoNode: boolean): V1Volume[] | undefined {
 
 async function loadResource(ns: string, name: string) {
     const { crd } = getClients();
-    const res = await crd.getNamespacedCustomObject(API_GROUP, API_VERSION, ns, PLURAL, name) as CustomResourceResponse<DataWorker.Spec, DataWorker.Status>;
+    const res = await crd.getNamespacedCustomObject(API_GROUP, API_VERSION, ns, PLURAL, name) as CustomResourceResponse<BackendWithStorage.Spec, BackendWithStorage.Status>;
     return res.body;
 }

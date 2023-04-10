@@ -6,7 +6,7 @@ import { buildHealthUrl, buildOpenUrl } from './helpers';
 
 const RUNNING_STATUSES = ['running', 'provisioning', 'syncing', 'error']
 
-export default class KupoOperator extends Operator {
+export default class WorkspacesOperator extends Operator {
     constructor() {
         super(/* pass in optional logger*/);
     }

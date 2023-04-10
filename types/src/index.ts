@@ -1,7 +1,7 @@
-import { KubernetesObject, V1ContainerStatus, V1ListMeta, V1PersistentVolumeClaim } from '@kubernetes/client-node';
+import { KubernetesObject, V1ContainerStatus, V1ListMeta } from '@kubernetes/client-node';
 import { IncomingMessage } from 'http';
 
-export * as DataWorker from './data-worker';
+export * as BackendWithStorage from './backend-with-storage';
 export * as Workspace from './workspace';
 
 export type WorkloadStatus = 'paused' | 'running' | 'provisioning' | 'syncing' | 'error';
