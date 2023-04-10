@@ -1,4 +1,4 @@
-resource "kubernetes_manifest" "backends" {
+resource "kubernetes_manifest" "frontends" {
   manifest = {
     "apiVersion" = "apiextensions.k8s.io/v1"
     "kind" = "CustomResourceDefinition"
