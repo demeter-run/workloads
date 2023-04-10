@@ -4,6 +4,7 @@ import { IncomingMessage } from 'http';
 export * as BackendWithStorage from './backend-with-storage';
 export * as Workspace from './workspace';
 export * as Backend from './backend';
+export * as Frontend from './frontend';
 
 export type WorkloadStatus = 'paused' | 'running' | 'provisioning' | 'syncing' | 'error';
 

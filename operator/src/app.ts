@@ -3,6 +3,7 @@ import { register } from './metrics/prometheus';
 import startBackendWithStorage from './backend-with-storage';
 import startWorkspace from './workspaces';
 import startBackend from './backend';
+import startFrontend from './frontend';
 import collectMetrics from './metrics';
 import { registerServices } from './services';
 
@@ -25,4 +26,5 @@ registerServices();
 startBackendWithStorage();
 startWorkspace();
 startBackend();
+startFrontend();
 collectMetrics();
