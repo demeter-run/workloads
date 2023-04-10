@@ -1,6 +1,6 @@
 import { CustomResourceListResponse, ResourceRequest, StorageClass, WorkloadPvc } from "@demeter-run/workloads-types";
 import { getClients } from "@demeter-sdk/framework";
-import { V1PersistentVolumeClaim, V1Pod, V1StatefulSetStatus } from "@kubernetes/client-node";
+import { V1DeploymentStatus, V1PersistentVolumeClaim, V1Pod, V1StatefulSetStatus } from "@kubernetes/client-node";
 import * as nodes from '@demeter-features/cardano-nodes';
 import fs from 'fs';
 
@@ -130,6 +130,13 @@ export function getNetworkFromAnnotations(annotations: Record<string, string>) {
 type Status = 'running' | 'paused' | 'provisioning';
 
 export function getSTSStatus(status: V1StatefulSetStatus, replicas: number): Status {
+  if (replicas === 0) return 'paused';
+  if (status.replicas && status.replicas > 0 && status.readyReplicas && status.readyReplicas > 0) return 'running';
+  if (status.replicas === 1 && (status.readyReplicas === 0 || typeof status.readyReplicas === 'undefined')) return 'provisioning';
+  return 'provisioning';
+}
+
+export function getDeploymentStatus(status: V1DeploymentStatus, replicas: number): Status {
   if (replicas === 0) return 'paused';
   if (status.replicas && status.replicas > 0 && status.readyReplicas && status.readyReplicas > 0) return 'running';
   if (status.replicas === 1 && (status.readyReplicas === 0 || typeof status.readyReplicas === 'undefined')) return 'provisioning';
