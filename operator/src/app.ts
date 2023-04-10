@@ -2,6 +2,7 @@ import express from 'express';
 import { register } from './metrics/prometheus';
 import startBackendWithStorage from './backend-with-storage';
 import startWorkspace from './workspaces';
+import startBackend from './backend';
 import collectMetrics from './metrics';
 import { registerServices } from './services';
 
@@ -23,4 +24,5 @@ server.get('/metrics', async (req, res) => {
 registerServices();
 startBackendWithStorage();
 startWorkspace();
+startBackend();
 collectMetrics();
