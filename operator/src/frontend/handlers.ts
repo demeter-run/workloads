@@ -70,8 +70,7 @@ export async function updateResource(ns: string, name: string, spec: Frontend.Sp
 }
 
 export async function updateResourceStatus(ns: string, name: string, resource: V1Deployment): Promise<void> {
-    const { crd } = getClients();
-    const pods = await loadPods(ns, name);
+    const { crd, apps } = getClients();
 
     const mainContainer = resource.spec?.template.spec?.containers.find(i => i.name === 'main');
 
@@ -86,9 +85,13 @@ export async function updateResourceStatus(ns: string, name: string, resource: V
     }
     let storageDCUPerMin = 0;
 
+    const deploymentRevision = resource.metadata?.annotations?.['deployment.kubernetes.io/revision'];
+    const rs = await apps.listNamespacedReplicaSet(ns, undefined, undefined, undefined, undefined, `demeter.run/instance=${name}`);
+    const rsRevision = rs.body.items.find(i => i.metadata?.annotations?.['deployment.kubernetes.io/revision'] === deploymentRevision);
+
     const patch = {
         status: {
-            availableReplicas: resource.status?.availableReplicas,
+            availableReplicas: rsRevision?.status?.availableReplicas || 0,
             runningStatus,
             computeDCUPerMin,
             storageDCUPerMin,
@@ -165,6 +168,7 @@ function deployment(name: string, spec: Frontend.Spec, owner: CustomResource<Fro
         },
         spec: {
             replicas: spec.enabled ? spec.replicas : 0,
+            revisionHistoryLimit: 5,
             selector: {
                 matchLabels: {
                     'demeter.run/instance': name,
