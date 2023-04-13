@@ -115,6 +115,16 @@ resource "kubernetes_deployment_v1" "operator" {
             value = var.pause_expired_workspaces
           }
 
+          env {
+            name = "CLUSTER_NAME"
+            value = var.cluster_name
+          }
+
+          env {
+            name = "DNS_ZONE"
+            value = var.dns_zone
+          }
+
           resources {
             limits = {
               memory = "250Mi"
