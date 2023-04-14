@@ -40,10 +40,30 @@
         "logo": "/haskell.png"
     },
     {
+        "id": "plutus-2023-03",
+        "weight": -1,
+        "name": "Plutus Tx",
+        "description": "A stack to develop Plutus smart contracts using Haskell and the development framework from IOG.",
+        "vsCodeExtensions": ["haskell.haskell"],
+        "dockerMods": [],
+        "tags": ["language"],
+        "logo": "/plutus.png"
+    },
+    {
+        "id": "aiken-2023-03",
+        "weight": 0,
+        "name": "Aiken",
+        "description": "A stack to develop Plutus smart contracts using a modern, tailor-made language.",
+        "vsCodeExtensions": [],
+        "dockerMods": ["ghcr.io/demeter-run/docker-mods-aiken-bin:latest"],
+        "tags": ["language"],
+        "logo": "/aiken.png"
+    },
+    {
         "id": "nvm-2023-03",
         "weight": 2,
         "name": "NodeJS",
-        "description": "NodeJS + Typescript. Good for creating frontends using Berry-Pool's Lucid framework.",
+        "description": "NodeJS + Typescript. Good for creating frontends and backends using Mesh, Lucid, Plu-TS, and other libraries.",
         "vsCodeExtensions": [],
         "dockerMods": ["ghcr.io/demeter-run/docker-mods-nvm:latest"],
         "tags": ["language"],
