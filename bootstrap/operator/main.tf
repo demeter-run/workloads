@@ -32,8 +32,8 @@ variable "config_map_name" {
 variable "per_min_dcus" {
   default = {
     "storage" : {
-      "fast" : 16,
-      "gp3" : 8
+      "fast" : 2,
+      "gp3" : 1
     }
   }
 }
