@@ -74,8 +74,9 @@ function pvcToModel(pvc: V1PersistentVolumeClaim, inUse: boolean): WorkloadPvc {
 export type Size = 'nano' | 'small' | 'medium' | 'large';
 
 export const STORAGE_DCU_PER_GB: Record<StorageClass, number> = {
-  gp3: Number(process.env.GP3_STORAGE_PER_GB_PER_MIN_DCUS) || 8,
-  fast: Number(process.env.FAST_STORAGE_PER_GB_PER_MIN_DCUS) || 16,
+  gp2: Number(process.env.GP3_STORAGE_PER_GB_PER_MIN_DCUS) || 1,
+  gp3: Number(process.env.GP3_STORAGE_PER_GB_PER_MIN_DCUS) || 1,
+  fast: Number(process.env.FAST_STORAGE_PER_GB_PER_MIN_DCUS) || 2,
 }
 
 export function getStorageDcuPerMin(storageClass: StorageClass, size: number, replicas: number) {

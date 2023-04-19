@@ -12,7 +12,7 @@ export type EnvVar = {
   name: string,
   value: string,
 }
-export type StorageClass = 'gp3' | 'fast';
+export type StorageClass = 'gp2' | 'gp3' | 'fast';
 
 export type StorageItem = {
   name: string,
