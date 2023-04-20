@@ -20,7 +20,7 @@
         "@demeter-features/cardano-kuber": "^1.1.5",
         "@demeter-features/cardano-kupo": "^1.1.3",
         "@demeter-features/cardano-marlowe": "^1.0.0",
-        "@demeter-features/cardano-nodes": "^1.2.5",
+        "@demeter-features/cardano-nodes": "^1.2.6",
         "@demeter-features/cardano-ogmios": "^1.1.4",
         "@demeter-features/cardano-submit-api": "^1.1.3",
         "@demeter-run/workloads-types": "*",
