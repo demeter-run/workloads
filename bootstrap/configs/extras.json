@@ -65,7 +65,7 @@
         "name": "NodeJS",
         "description": "NodeJS + Typescript. Good for creating frontends and backends using Mesh, Lucid, Plu-TS, and other libraries.",
         "vsCodeExtensions": [],
-        "dockerMods": ["ghcr.io/demeter-run/docker-mods-nvm:latest"],
+        "dockerMods": ["ghcr.io/demeter-run/docker-mods-nodejs-nvm:latest"],
         "tags": ["language"],
         "logo": "/typescript.png"
     },
