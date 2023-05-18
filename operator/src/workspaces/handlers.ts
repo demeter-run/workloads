@@ -1,12 +1,37 @@
-import { V1StatefulSet, V1PersistentVolumeClaim, PatchUtils, V1Pod, V1Container, V1EnvVar, V1Volume, V1VolumeMount, V1Ingress, V1Service } from '@kubernetes/client-node';
-import { getClients, slugToNamespace, readProjectUnsecure, Network, namespaceToSlug } from '@demeter-sdk/framework';
+import {
+    V1StatefulSet,
+    V1PersistentVolumeClaim,
+    PatchUtils,
+    V1Container,
+    V1EnvVar,
+    V1Volume,
+    V1VolumeMount,
+    V1Ingress,
+    V1Service,
+} from '@kubernetes/client-node';
+import { getClients, readProjectUnsecure, Network, namespaceToSlug } from '@demeter-sdk/framework';
 import { API_VERSION, API_GROUP, PLURAL, SINGULAR, KIND, DEFAULT_VSCODE_IMAGE } from './constants';
-import { CustomResource, CustomResourceListResponse, Workspace, StorageClass, Pod, ResourceRequest, CustomResourceResponse } from '@demeter-run/workloads-types';
+import { CustomResource, Workspace, StorageClass, CustomResourceResponse } from '@demeter-run/workloads-types';
 import { buildEnvVars, getDependenciesForNetwork, isCardanoNodeEnabled } from '../shared/dependencies';
-import { buildSocatArgs, getComputeDCUPerMin, getNetworkFromAnnotations, getResourcesFromComputeClass, getStorageDcuPerMin, getSTSStatus, listStorage, listStorageWithUsage, loadPods, Size } from '../shared';
+import {
+    buildSocatArgs,
+    getComputeDCUPerMin,
+    getNetworkFromAnnotations,
+    getResourcesFromComputeClass,
+    getStorageDcuPerMin,
+    getSTSStatus,
+    listStorage,
+    listStorageWithUsage,
+    loadPods,
+} from '../shared';
 import { buildDefaultEnvVars, buildDnsZone, INITIAL_ENV_VAR_NAMES } from './helpers';
 
-export async function handleResource(ns: string, name: string, spec: Workspace.Spec, owner: CustomResource<Workspace.Spec, Workspace.Status>): Promise<void> {
+export async function handleResource(
+    ns: string,
+    name: string,
+    spec: Workspace.Spec,
+    owner: CustomResource<Workspace.Spec, Workspace.Status>,
+): Promise<void> {
     const { apps, core, net } = getClients();
 
     const project = await readProjectUnsecure(namespaceToSlug(owner.metadata?.namespace!));
@@ -20,33 +45,29 @@ export async function handleResource(ns: string, name: string, spec: Workspace.S
     const depsEnvVars = await buildEnvVars(deps, network);
     const defaultEnvVars = buildDefaultEnvVars(spec);
     const usesCardanoNode = isCardanoNodeEnabled(deps);
-    const envVars = [...depsEnvVars, ...defaultEnvVars]
+    const envVars = [...depsEnvVars, ...defaultEnvVars];
     const volumesList = volumes(usesCardanoNode);
     const containerList = containers(spec, envVars, usesCardanoNode);
     try {
         await apps.readNamespacedStatefulSet(name, ns);
         await updateResource(ns, name, spec, containerList, volumesList, owner);
     } catch (err: any) {
-        console.log(err?.body)
+        console.log(err?.body);
         await apps.createNamespacedStatefulSet(ns, sts(name, spec, owner, containerList, volumesList));
         await core.createNamespacedService(ns, service(name, owner));
         await net.createNamespacedIngress(ns, ingress(name, buildDnsZone(spec), owner));
     }
 }
 
-export async function updateResource(ns: string, name: string, spec: Workspace.Spec, containers: V1Container[], volumes: V1Volume[] | undefined, owner: CustomResource<Workspace.Spec, Workspace.Status>): Promise<void> {
+export async function updateResource(
+    ns: string,
+    name: string,
+    spec: Workspace.Spec,
+    containers: V1Container[],
+    volumes: V1Volume[] | undefined,
+    owner: CustomResource<Workspace.Spec, Workspace.Status>,
+): Promise<void> {
     const { apps, core } = getClients();
-
-    // containers should be replaced because of we might need to remove socat and replace ENV VARS
-    const containersList = [
-        {
-            op: 'replace',
-            path: '/spec/template/spec/containers',
-            value: containers
-        }
-    ];
-
-    await apps.patchNamespacedStatefulSet(name, ns, containersList, undefined, undefined, undefined, undefined, undefined, { headers: { 'content-type': PatchUtils.PATCH_FORMAT_JSON_PATCH } });
 
     // patch resource
     const patchBody = {
@@ -77,7 +98,13 @@ export async function updateResource(ns: string, name: string, spec: Workspace.S
                 },
                 spec: {
                     restartPolicy: 'Always',
-                    volumes
+                    volumes,
+                    containers: [
+                        ...containers,
+                        {
+                            $patch: 'replace',
+                        },
+                    ],
                 },
             },
         },
@@ -102,15 +129,22 @@ export async function updateResource(ns: string, name: string, spec: Workspace.S
                         storage: spec.storage.size,
                     },
                 },
-                storageClassName: spec.storage.class,
-            }
-        }
+            },
+        };
 
         options = { headers: { 'Content-type': PatchUtils.PATCH_FORMAT_JSON_MERGE_PATCH } };
-        await core.patchNamespacedPersistentVolumeClaim(pvc.metadata?.name!, ns, pvcPatchBody, undefined, undefined, undefined, undefined, undefined, options);
+        await core.patchNamespacedPersistentVolumeClaim(
+            pvc.metadata?.name!,
+            ns,
+            pvcPatchBody,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            options,
+        );
     }
-
-
 }
 
 export async function updateResourceStatus(ns: string, name: string, resource: V1StatefulSet): Promise<void> {
@@ -118,7 +152,7 @@ export async function updateResourceStatus(ns: string, name: string, resource: V
     const pods = await loadPods(ns, name);
 
     const storage = await listStorageWithUsage(ns, name, pods);
-    const mainContainer = resource.spec?.template.spec?.containers.find(i => i.name === 'main');
+    const mainContainer = resource.spec?.template.spec?.containers?.find(i => i.name === 'main');
 
     const availableEnvVars = mainContainer?.env?.map(i => i.name).filter(i => !INITIAL_ENV_VAR_NAMES.includes(i));
 
@@ -127,36 +161,50 @@ export async function updateResourceStatus(ns: string, name: string, resource: V
     let computeDCUPerMin = 0;
     if (runningStatus === 'running') {
         const owner = await loadResource(ns, name);
-        computeDCUPerMin = getComputeDCUPerMin(owner.spec.computeClass, resource.spec?.replicas!)
+        computeDCUPerMin = getComputeDCUPerMin(owner.spec.computeClass, resource.spec?.replicas!);
     }
     let storageDCUPerMin = 0;
 
     if (storage.length) {
-        storageDCUPerMin = getStorageDcuPerMin(storage[0].class as StorageClass, Number(storage[0].size.replace('Gi', '')), storage.length)
+        storageDCUPerMin = getStorageDcuPerMin(storage[0].class as StorageClass, Number(storage[0].size.replace('Gi', '')), storage.length);
     }
 
-    const patch = {
-        status: {
-            availableReplicas: resource.status?.availableReplicas,
-            runningStatus,
-            storage,
-            computeDCUPerMin,
-            storageDCUPerMin,
+    const patch = [
+        {
+            op: 'replace',
+            path: '/status/availableReplicas',
+            value: resource.status?.availableReplicas || 0,
         },
-    };
+        {
+            op: 'replace',
+            path: '/status/runningStatus',
+            value: runningStatus,
+        },
+        {
+            op: 'replace',
+            path: '/status/computeDCUPerMin',
+            value: computeDCUPerMin,
+        },
+        {
+            op: 'replace',
+            path: '/status/storage',
+            value: storage,
+        },
+        {
+            op: 'replace',
+            path: '/status/storageDCUPerMin',
+            value: storageDCUPerMin,
+        },
+        {
+            op: 'replace',
+            path: '/status/availableEnvVars',
+            value: availableEnvVars,
+        },
+    ];
 
-    const options = { headers: { 'Content-type': PatchUtils.PATCH_FORMAT_JSON_MERGE_PATCH } };
-    await crd.patchNamespacedCustomObjectStatus(API_GROUP, API_VERSION, ns, PLURAL, name, patch, undefined, undefined, undefined, options);
-
-    // env vars should not be merged.
-    const envPatch = [{
-        op: 'replace',
-        path: '/status/availableEnvVars',
-        value: availableEnvVars,
-    }];
-
-    await crd.patchNamespacedCustomObjectStatus(API_GROUP, API_VERSION, ns, PLURAL, name, envPatch, undefined, undefined, undefined, { headers: { 'content-type': PatchUtils.PATCH_FORMAT_JSON_PATCH } });
-
+    await crd.patchNamespacedCustomObjectStatus(API_GROUP, API_VERSION, ns, PLURAL, name, patch, undefined, undefined, undefined, {
+        headers: { 'content-type': PatchUtils.PATCH_FORMAT_JSON_PATCH },
+    });
 }
 
 export async function updateResourceLastActivity(item: CustomResource<Workspace.Spec, Workspace.Status>, lastActivity: number) {
@@ -169,8 +217,18 @@ export async function updateResourceLastActivity(item: CustomResource<Workspace.
         },
     };
     const options = { headers: { 'Content-type': PatchUtils.PATCH_FORMAT_JSON_MERGE_PATCH } };
-    await crd.patchNamespacedCustomObjectStatus(API_GROUP, API_VERSION, item.metadata?.namespace!, PLURAL, item.metadata?.name!, patch, undefined, undefined, undefined, options);
-
+    await crd.patchNamespacedCustomObjectStatus(
+        API_GROUP,
+        API_VERSION,
+        item.metadata?.namespace!,
+        PLURAL,
+        item.metadata?.name!,
+        patch,
+        undefined,
+        undefined,
+        undefined,
+        options,
+    );
 }
 
 export async function pvcUpdated(ns: string, name: string, resource: V1PersistentVolumeClaim): Promise<void> {
@@ -185,13 +243,13 @@ export async function pvcUpdated(ns: string, name: string, resource: V1Persisten
     let storageDCUPerMin = 0;
 
     if (storage.length) {
-        storageDCUPerMin = getStorageDcuPerMin(storage[0].class as StorageClass, Number(storage[0].size.replace('Gi', '')), storage.length)
+        storageDCUPerMin = getStorageDcuPerMin(storage[0].class as StorageClass, Number(storage[0].size.replace('Gi', '')), storage.length);
     }
 
     const patch = {
         status: {
             storage,
-            storageDCUPerMin
+            storageDCUPerMin,
         },
     };
 
@@ -200,34 +258,6 @@ export async function pvcUpdated(ns: string, name: string, resource: V1Persisten
         await crd.patchNamespacedCustomObjectStatus(API_GROUP, API_VERSION, ns, PLURAL, instance, patch, undefined, undefined, undefined, options);
     } catch (err: any) {
         throw err?.body || err;
-    }
-
-}
-
-export async function podUpdated(ns: string, name: string, resource: V1Pod): Promise<void> {
-    const { crd } = await getClients();
-    const main = resource.status?.containerStatuses?.find(item => item.name === 'main');
-    if (main && !main.ready && main.restartCount > 1) {
-        const patch = {
-            status: {
-                runningStatus: 'error',
-            },
-        };
-        const owner = resource.metadata?.ownerReferences![0]!;
-        const options = { headers: { 'Content-type': PatchUtils.PATCH_FORMAT_JSON_MERGE_PATCH } };
-        await crd.patchNamespacedCustomObjectStatus(API_GROUP, API_VERSION, ns, PLURAL, owner.name, patch, undefined, undefined, undefined, options);
-    }
-}
-
-export async function listResourcePods(projectSlug: string, instanceId: string) {
-    const { core } = getClients();
-    const ns = slugToNamespace(projectSlug);
-
-    try {
-        const pods = await core.listNamespacedPod(ns, undefined, undefined, undefined, undefined, `demeter.run/instance=${instanceId}`);
-        return pods.body.items.map(podToModel);
-    } catch (err) {
-        return null;
     }
 }
 
@@ -245,7 +275,13 @@ export async function deletePVCs(ns: string, name: string): Promise<void> {
     }
 }
 
-function sts(name: string, spec: Workspace.Spec, owner: CustomResource<Workspace.Spec, Workspace.Status>, containers: V1Container[], volumes: V1Volume[] | undefined): V1StatefulSet {
+function sts(
+    name: string,
+    spec: Workspace.Spec,
+    owner: CustomResource<Workspace.Spec, Workspace.Status>,
+    containers: V1Container[],
+    volumes: V1Volume[] | undefined,
+): V1StatefulSet {
     return {
         metadata: {
             name,
@@ -300,9 +336,11 @@ function sts(name: string, spec: Workspace.Spec, owner: CustomResource<Workspace
                     securityContext: {
                         fsGroup: 1000,
                     },
-                    containers,
+                    containers: {
+                        ...containers,
+                    },
                     restartPolicy: 'Always',
-                    volumes
+                    volumes,
                 },
             },
         },
@@ -316,7 +354,7 @@ function pvc(name: string, spec: Workspace.Spec): V1PersistentVolumeClaim {
             labels: {
                 'demeter.run/kind': KIND,
                 'demeter.run/version': API_VERSION,
-            }
+            },
         },
         spec: {
             accessModes: ['ReadWriteOnce'],
@@ -330,17 +368,6 @@ function pvc(name: string, spec: Workspace.Spec): V1PersistentVolumeClaim {
     };
 }
 
-function podToModel(pod: V1Pod): Pod {
-    const name = pod.metadata?.name!;
-    return {
-        name,
-        uid: pod.metadata?.uid!,
-        status: pod.status?.phase!,
-        containers: pod.status?.containerStatuses!,
-        startTime: String(pod.status?.startTime!),
-    };
-}
-
 function getImageFromSpec(spec: Workspace.Spec): string {
     if (spec.ide.image) return spec.ide.image;
     switch (spec.ide.type) {
@@ -349,19 +376,19 @@ function getImageFromSpec(spec: Workspace.Spec): string {
     }
 }
 
-function containers(spec: Workspace.Spec, envVars: V1EnvVar[], usesCardanoNode: boolean): V1Container[] {
+function containers(spec: Workspace.Spec, envVars: V1EnvVar[], usesCardanoNode: boolean, patch?: boolean): V1Container[] {
     const volumeMounts: V1VolumeMount[] = [
         {
             name: 'home',
             mountPath: '/config',
         },
-    ]
+    ];
 
     if (usesCardanoNode) {
         volumeMounts.push({
             name: 'ipc',
             mountPath: '/ipc',
-        })
+        });
     }
 
     const containers: V1Container[] = [
@@ -381,27 +408,25 @@ function containers(spec: Workspace.Spec, envVars: V1EnvVar[], usesCardanoNode: 
                 failureThreshold: 20,
                 periodSeconds: 10,
             },
-        }
+        },
     ];
 
     if (usesCardanoNode) {
-        containers.push(
-            {
-                name: 'socat',
-                image: 'alpine/socat',
-                securityContext: {
-                    runAsUser: 1000,
-                    runAsGroup: 1000,
+        containers.push({
+            name: 'socat',
+            image: 'alpine/socat',
+            securityContext: {
+                runAsUser: 1000,
+                runAsGroup: 1000,
+            },
+            args: [...buildSocatArgs(spec.annotations)],
+            volumeMounts: [
+                {
+                    name: 'ipc',
+                    mountPath: '/ipc',
                 },
-                args: [...buildSocatArgs(spec.annotations)],
-                volumeMounts: [
-                    {
-                        name: 'ipc',
-                        mountPath: '/ipc',
-                    },
-                ],
-            }
-        )
+            ],
+        });
     }
 
     return containers;
@@ -414,7 +439,7 @@ function volumes(usesCardanoNode: boolean): V1Volume[] | undefined {
                 name: 'ipc',
                 emptyDir: {},
             },
-        ]
+        ];
     }
 }
 
@@ -504,8 +529,6 @@ function service(name: string, owner: CustomResource<Workspace.Spec, Workspace.S
     };
 }
 
-
-
 export async function patchResource(ns: string, name: string, spec: Partial<Workspace.Spec>) {
     const { crd } = getClients();
 
@@ -514,23 +537,15 @@ export async function patchResource(ns: string, name: string, spec: Partial<Work
     };
 
     const options = { headers: { 'Content-type': PatchUtils.PATCH_FORMAT_JSON_MERGE_PATCH } };
-    const res = await crd.patchNamespacedCustomObject(
-        API_GROUP,
-        API_VERSION,
-        ns,
-        PLURAL,
-        name,
-        patch,
-        undefined,
-        undefined,
-        undefined,
-        options,
-    );
+    const res = await crd.patchNamespacedCustomObject(API_GROUP, API_VERSION, ns, PLURAL, name, patch, undefined, undefined, undefined, options);
     return res.body as CustomResource<Workspace.Spec, Workspace.Status>;
 }
 
 async function loadResource(ns: string, name: string) {
     const { crd } = getClients();
-    const res = await crd.getNamespacedCustomObject(API_GROUP, API_VERSION, ns, PLURAL, name) as CustomResourceResponse<Workspace.Spec, Workspace.Status>;
+    const res = (await crd.getNamespacedCustomObject(API_GROUP, API_VERSION, ns, PLURAL, name)) as CustomResourceResponse<
+        Workspace.Spec,
+        Workspace.Status
+    >;
     return res.body;
 }

@@ -13,6 +13,7 @@ interface StatusResource extends CustomResource<GenericWorkload, MetricsStatus> 
 
 export const STATUS: Record<string, number> = {
   running: 2,
+  degraded: 1,
   provisioning: 1,
   paused: 0,
   error: -1,

@@ -1,6 +1,6 @@
 import { makeInformer } from '@kubernetes/client-node';
 import { API_VERSION, KIND } from './constants';
-import { podUpdated, pvcUpdated, updateResourceStatus } from './handlers';
+import { pvcUpdated, updateResourceStatus } from './handlers';
 import { getClients } from '@demeter-sdk/framework';
 
 const LABEL_SELECTOR = `demeter.run/version=${API_VERSION}, demeter.run/kind=${KIND}`;
@@ -29,22 +29,9 @@ pvcInformer.on('update', async resource => {
     console.log('SHARED - PVC UPDATED');
     try {
         await pvcUpdated(resource.metadata?.namespace!, resource.metadata?.name!, resource);
-    } catch(err) {
+    } catch (err) {
         console.error(err);
     }
 });
 
-const podListFn = () => core.listPodForAllNamespaces(undefined, undefined, undefined, LABEL_SELECTOR);
-
-const podInformer = makeInformer(client, '/api/v1/pods', podListFn, LABEL_SELECTOR);
-
-podInformer.on('update', async resource => {
-    console.log('SHARED - POD UPDATED');
-    try {
-        await podUpdated(resource.metadata?.namespace!, resource.metadata?.name!, resource);
-    } catch(err) {
-        console.error(err);
-    }
-});
-
-export { stsInformer, pvcInformer, podInformer };
+export { stsInformer, pvcInformer };
