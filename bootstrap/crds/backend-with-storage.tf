@@ -68,6 +68,23 @@ resource "kubernetes_manifest" "backendswithstorage" {
                     "args" = {
                       "type" = "string"
                     }
+                    "command" = {
+                      "type" = "string"
+                    }
+                    "config" = {
+                      "items" = {
+                        "properties" = {
+                          "config" = {
+                            "type" = "string"
+                          }
+                          "name" = {
+                            "type" = "string"
+                          }
+                        }
+                        "type" = "object"
+                      }
+                      "type" = "array"
+                    }
                     "computeClass" = {
                       "type" = "string"
                     }

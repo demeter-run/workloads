@@ -3,7 +3,7 @@ import Operator, { ResourceEventType, ResourceEvent } from '@dot-i/k8s-operator'
 import { API_VERSION, API_GROUP, PLURAL } from './constants';
 import { handleResource, deletePVCs } from './handlers';
 
-const RUNNING_STATUSES = ['running', 'provisioning', 'syncing', 'error']
+const RUNNING_STATUSES = ['running', 'provisioning', 'syncing', 'degraded']
 
 export default class BackendWithStorageOperator extends Operator {
     constructor() {

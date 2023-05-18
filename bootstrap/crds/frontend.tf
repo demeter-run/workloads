@@ -58,6 +58,23 @@ resource "kubernetes_manifest" "frontends" {
                     "args" = {
                       "type" = "string"
                     }
+                    "command" = {
+                      "type" = "string"
+                    }
+                    "config" = {
+                      "items" = {
+                        "properties" = {
+                          "config" = {
+                            "type" = "string"
+                          }
+                          "name" = {
+                            "type" = "string"
+                          }
+                        }
+                        "type" = "object"
+                      }
+                      "type" = "array"
+                    }
                     "computeClass" = {
                       "type" = "string"
                     }

@@ -6,13 +6,18 @@ export * as Workspace from './workspace';
 export * as Backend from './backend';
 export * as Frontend from './frontend';
 
-export type WorkloadStatus = 'paused' | 'running' | 'provisioning' | 'syncing' | 'error';
+export type WorkloadStatus = 'paused' | 'running' | 'provisioning' | 'syncing' | 'error' | 'degraded';
 
 export type EnvVar = {
   name: string,
   value: string,
 }
 export type StorageClass = 'gp2' | 'gp3' | 'fast';
+
+export type WorkloadConfig = {
+  name: string,
+  config: string,
+}
 
 export type StorageItem = {
   name: string,
@@ -36,6 +41,7 @@ export type MetricsStatus = {
   startTime: number;
   computeDCUPerMin: number;
   storageDCUPerMin: number;
+  lastError: string;
 }
 
 export type ResourceRequest = {
