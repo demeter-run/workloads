@@ -198,7 +198,7 @@ function containers(spec: Frontend.Spec, envVars: V1EnvVar[], usesCardanoNode: b
     const volumeMounts: V1VolumeMount[] = [
         {
             name: 'config',
-            mountPath: '/config',
+            mountPath: '/etc/config',
         },
     ];
 
