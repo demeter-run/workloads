@@ -325,7 +325,7 @@ function containers(spec: BackendWithStorage.Spec, envVars: V1EnvVar[], usesCard
         },
         {
             name: 'config',
-            mountPath: '/config',
+            mountPath: '/etc/config',
         },
     ];
 

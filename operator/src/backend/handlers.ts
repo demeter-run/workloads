@@ -212,7 +212,7 @@ function containers(spec: Backend.Spec, envVars: V1EnvVar[], usesCardanoNode: bo
     const volumeMounts: V1VolumeMount[] = [
         {
             name: 'config',
-            mountPath: '/config',
+            mountPath: '/etc/config',
         },
     ];
 
