@@ -18,6 +18,7 @@ export const STATUS: Record<string, number> = {
   paused: 0,
   error: -1,
   syncing: 1,
+  expired: -2,
 };
 
 export function buildPayload(item: StatusResource) {

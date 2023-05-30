@@ -28,6 +28,7 @@ export type Spec = GenericWorkload & {
   ide: Ide;
   extras: string[];
   sourceCode: GitRepository;
+  pinned: boolean;
   storage: {
     class: StorageClass;
     size: string;

@@ -6,7 +6,7 @@ export * as Workspace from './workspace';
 export * as Backend from './backend';
 export * as Frontend from './frontend';
 
-export type WorkloadStatus = 'paused' | 'running' | 'provisioning' | 'syncing' | 'error' | 'degraded';
+export type WorkloadStatus = 'paused' | 'running' | 'provisioning' | 'syncing' | 'error' | 'degraded' | 'expired';
 
 export type EnvVar = {
   name: string,

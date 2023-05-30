@@ -200,6 +200,11 @@ export async function updateResourceStatus(ns: string, name: string, resource: V
             path: '/status/availableEnvVars',
             value: availableEnvVars,
         },
+        {
+            op: 'replace',
+            path: '/status/lastUpdated',
+            value: Date.now(),
+        },
     ];
 
     await crd.patchNamespacedCustomObjectStatus(API_GROUP, API_VERSION, ns, PLURAL, name, patch, undefined, undefined, undefined, {
@@ -541,6 +546,29 @@ export async function patchResource(ns: string, name: string, spec: Partial<Work
     return res.body as CustomResource<Workspace.Spec, Workspace.Status>;
 }
 
+export async function patchResourceStatus(ns: string, name: string, status: Partial<Workspace.Status>) {
+    const { crd } = getClients();
+
+    const patch = {
+        status,
+    };
+
+    const options = { headers: { 'Content-type': PatchUtils.PATCH_FORMAT_JSON_MERGE_PATCH } };
+    const res = await crd.patchNamespacedCustomObjectStatus(
+        API_GROUP,
+        API_VERSION,
+        ns,
+        PLURAL,
+        name,
+        patch,
+        undefined,
+        undefined,
+        undefined,
+        options,
+    );
+    return res.body as CustomResource<Workspace.Spec, Workspace.Status>;
+}
+
 async function loadResource(ns: string, name: string) {
     const { crd } = getClients();
     const res = (await crd.getNamespacedCustomObject(API_GROUP, API_VERSION, ns, PLURAL, name)) as CustomResourceResponse<
@@ -548,4 +576,11 @@ async function loadResource(ns: string, name: string) {
         Workspace.Status
     >;
     return res.body;
+}
+
+export async function deleteResource(ns: string, name: string) {
+    const { crd } = getClients();
+
+    await crd.deleteNamespacedCustomObject(API_GROUP, API_VERSION, ns, PLURAL, name);
+    return null;
 }
