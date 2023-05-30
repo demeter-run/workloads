@@ -3,8 +3,7 @@ import { loadProjectInstances } from '../shared';
 import { API_GROUP, API_VERSION, PLURAL } from './constants';
 import { deleteResource, patchResource, patchResourceStatus } from './handlers';
 
-// const FOURTEEN_DAYS = 14 * 24 * 60 * 60 * 1000;
-const FOURTEEN_DAYS = 5 * 60 * 1000;
+const FOURTEEN_DAYS = 14 * 24 * 60 * 60 * 1000;
 
 const EXPIRE_VALUE = process.env.EXPIRE_WORKSPACE_DAYS
     ? Number(process.env.EXPIRE_WORKSPACE_DAYS) * 24 * 60 * 60 * 1000
@@ -21,8 +20,8 @@ function checkStatus(item: CustomResource<Workspace.Spec, Workspace.Status>, now
 
 export async function checkWorkspaceExpired(): Promise<void> {
     const wks = (await loadProjectInstances(API_GROUP, API_VERSION, PLURAL)) as CustomResource<Workspace.Spec, Workspace.Status>[];
-    const running = wks.filter(item => item.status.runningStatus !== 'running' && item.status.runningStatus !== 'expired');
-    for await (const item of running) {
+    const filtered = wks.filter(item => item.status.runningStatus !== 'running' && item.status.runningStatus !== 'expired');
+    for await (const item of filtered) {
         const now = Date.now();
         const status = checkStatus(item, now, EXPIRE_VALUE);
         if (status === 'expired') {
