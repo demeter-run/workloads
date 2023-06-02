@@ -4,7 +4,7 @@ import { API_VERSION, API_GROUP, PLURAL } from './constants';
 import { handleResource, deletePVCs } from './handlers';
 import { buildHealthUrl, buildOpenUrl } from './helpers';
 
-const RUNNING_STATUSES = ['running', 'provisioning', 'syncing', 'error']
+const RUNNING_STATUSES = ['running', 'provisioning', 'syncing', 'error'];
 
 export default class WorkspacesOperator extends Operator {
     constructor() {
@@ -70,6 +70,7 @@ export default class WorkspacesOperator extends Operator {
         if (status.observedGeneration !== metadata?.generation) {
             await this.patchResourceStatus(e.meta, {
                 observedGeneration: metadata?.generation,
+                lastUpdated: Date.now(),
             });
         }
     }

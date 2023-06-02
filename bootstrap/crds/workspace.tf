@@ -1,14 +1,14 @@
 resource "kubernetes_manifest" "workspaces" {
   manifest = {
     "apiVersion" = "apiextensions.k8s.io/v1"
-    "kind" = "CustomResourceDefinition"
+    "kind"       = "CustomResourceDefinition"
     "metadata" = {
       "name" = "workspaces.demeter.run"
     }
     "spec" = {
       "group" = "demeter.run"
       "names" = {
-        "kind" = "Workspace"
+        "kind"   = "Workspace"
         "plural" = "workspaces"
         "shortNames" = [
           "wks",
@@ -21,38 +21,38 @@ resource "kubernetes_manifest" "workspaces" {
           "additionalPrinterColumns" = [
             {
               "jsonPath" = ".spec.enabled"
-              "name" = "Enabled"
-              "type" = "boolean"
+              "name"     = "Enabled"
+              "type"     = "boolean"
             },
             {
               "jsonPath" = ".status.runningStatus"
-              "name" = "Status"
-              "type" = "string"
+              "name"     = "Status"
+              "type"     = "string"
             },
             {
               "jsonPath" = ".spec.computeClass"
-              "name" = "Compute Class"
-              "type" = "string"
+              "name"     = "Compute Class"
+              "type"     = "string"
             },
             {
               "jsonPath" = ".spec.storage.class"
-              "name" = "Storage Class"
-              "type" = "string"
+              "name"     = "Storage Class"
+              "type"     = "string"
             },
             {
               "jsonPath" = ".spec.storage.size"
-              "name" = "Storage Size"
-              "type" = "string"
+              "name"     = "Storage Size"
+              "type"     = "string"
             },
             {
               "jsonPath" = ".status.computeDCUPerMin"
-              "name" = "Compute DCU/min"
-              "type" = "number"
+              "name"     = "Compute DCU/min"
+              "type"     = "number"
             },
             {
               "jsonPath" = ".status.storageDCUPerMin"
-              "name" = "Storage DCU/min"
-              "type" = "number"
+              "name"     = "Storage DCU/min"
+              "type"     = "number"
             },
           ]
           "name" = "v1alpha1"
@@ -62,13 +62,16 @@ resource "kubernetes_manifest" "workspaces" {
                 "spec" = {
                   "properties" = {
                     "annotations" = {
-                      "type" = "object"
+                      "type"                                 = "object"
                       "x-kubernetes-preserve-unknown-fields" = true
                     }
                     "computeClass" = {
                       "type" = "string"
                     }
                     "enabled" = {
+                      "type" = "boolean"
+                    }
+                    "pinned" = {
                       "type" = "boolean"
                     }
                     "extras" = {
@@ -118,7 +121,7 @@ resource "kubernetes_manifest" "workspaces" {
                         }
                         "size" = {
                           "pattern" = "^(\\d+(e\\d+)?|\\d+(\\.\\d+)?(e\\d+)?[EPTGMK]i?)$"
-                          "type" = "string"
+                          "type"    = "string"
                         }
                       }
                       "type" = "object"
@@ -191,7 +194,7 @@ resource "kubernetes_manifest" "workspaces" {
               "type" = "object"
             }
           }
-          "served" = true
+          "served"  = true
           "storage" = true
           "subresources" = {
             "status" = {}

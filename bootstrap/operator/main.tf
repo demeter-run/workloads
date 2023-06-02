@@ -4,19 +4,34 @@ variable "image_tag" {}
 
 variable "cluster_name" {}
 
-variable "uptime_interval" {
+variable "idle_interval" {
   description = "the inverval for checking workspace uptime and decide if it should be turned off"
   default     = "300"
 }
 
-variable "workspace_expire" {
-  description = "the value in seconds after a workspace is considered as expired."
+variable "workspace_idle" {
+  description = "the value in seconds after a workspace is considered as idle."
   default     = "1800" // 30 minutes
 }
 
-variable "pause_expired_workspaces" {
+variable "pause_idle_workspaces" {
   description = "Wether expired workspaces should be paused or not"
   default     = "true"
+}
+
+variable "workspace_expire" {
+  description = "the value in days after a workspace is considered as expired (i.e: should be deleted)"
+  default     = "14" // 14 days
+}
+
+variable "delete_expired_workspaces" {
+  description = "Wether expired workspaces should be deleted or not"
+  default     = "false"
+}
+
+variable "expire_interval" {
+  description = "the inverval for checking workspace expiration"
+  default     = "7200" // 2 hours
 }
 
 variable "scrape_interval" {
@@ -102,17 +117,32 @@ resource "kubernetes_deployment_v1" "operator" {
           }
 
           env {
-            name  = "UPTIME_INTERVAL_S"
-            value = var.uptime_interval
+            name  = "IDLE_INTERVAL_S"
+            value = var.idle_interval
           }
 
           env {
-            name  = "EXPIRE_WORKSPACE_S"
-            value = var.workspace_expire
+            name  = "IDLE_WORKSPACE_S"
+            value = var.workspace_idle
           }
           env {
-            name  = "PAUSE_EXPIRED_WORKSPACES"
-            value = var.pause_expired_workspaces
+            name  = "PAUSE_IDLE_WORKSPACES"
+            value = var.pause_idle_workspaces
+          }
+
+          env {
+            name  = "EXPIRE_INTERVAL_S"
+            value = var.expire_interval
+          }
+
+          env {
+            name  = "EXPIRE_WORKSPACE_DAYS"
+            value = var.workspace_expire
+          }
+
+          env {
+            name  = "DELETE_EXPIRED_WORKSPACES"
+            value = var.delete_expired_workspaces
           }
 
           env {
