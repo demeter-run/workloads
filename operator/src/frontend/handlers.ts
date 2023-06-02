@@ -59,7 +59,7 @@ export async function updateResource(ns: string, name: string, spec: Frontend.Sp
             replicas: spec.enabled ? spec.replicas : 0,
             template: {
                 spec: {
-                    restartPolicy: 'Always',
+                    automountServiceAccountToken: false,
                     volumes: [
                         ...volumes,
                         {
@@ -172,6 +172,7 @@ function deployment(
                     },
                 },
                 spec: {
+                    automountServiceAccountToken: false,
                     tolerations: [
                         {
                             key: 'demeter.run/workload',
