@@ -97,7 +97,7 @@ export async function updateResource(
                     },
                 },
                 spec: {
-                    restartPolicy: 'Always',
+                    automountServiceAccountToken: false,
                     volumes,
                     containers: [
                         ...containers,
@@ -330,6 +330,7 @@ function sts(
                     },
                 },
                 spec: {
+                    automountServiceAccountToken: false,
                     tolerations: [
                         {
                             key: 'demeter.run/workload',

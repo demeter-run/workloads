@@ -70,6 +70,7 @@ export async function updateResource(
             replicas: spec.enabled ? spec.replicas : 0,
             template: {
                 spec: {
+                    automountServiceAccountToken: false,
                     volumes: [
                         ...volumes,
                         {
@@ -274,6 +275,7 @@ function sts(
                     },
                 },
                 spec: {
+                    automountServiceAccountToken: false,
                     tolerations: [
                         {
                             key: 'demeter.run/workload',
