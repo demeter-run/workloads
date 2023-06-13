@@ -31,7 +31,7 @@ export async function checkWorkspaceExpired(): Promise<void> {
             await patchResourceStatus(item.metadata?.namespace!, item.metadata?.name!, { runningStatus: 'expired', storageDCUPerMin: 0 });
             if (DELETE_EXPIRED_WORKSPACES === 'true') {
                 console.log('deleting workspace', item.metadata?.namespace, item.metadata?.name);
-                await deleteResource(item.metadata?.namespace!, item.metadata?.name!);
+                // await deleteResource(item.metadata?.namespace!, item.metadata?.name!);
             }
         }
     }
