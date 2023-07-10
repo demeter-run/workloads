@@ -50,7 +50,7 @@ export async function checkWorkspaceIdle(): Promise<void> {
         const status = checkWorkspaceActiveStatus(item, now, IDLE_VALUE);
         if (status === 'expired') {
             console.info({
-                message: `Workspace: ${item.metadata?.name}@${item.metadata?.namespace} is expired.`,
+                message: `Workspace: ${item.metadata?.name}@${item.metadata?.namespace} is idle.`,
             });
             if (PAUSE_IDLE_WORKSPACES === 'true') {
                 console.log('pausing workspace', item.metadata?.namespace, item.metadata?.name);
