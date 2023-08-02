@@ -202,14 +202,6 @@ resource "kubernetes_deployment_v1" "operator" {
           operator = "Equal"
           value    = "consistent"
         }
-
-        # deprecated
-        toleration {
-          effect   = "NoSchedule"
-          key      = "demeter.run/workload"
-          operator = "Equal"
-          value    = "ephemeral"
-        }
       }
     }
   }
