@@ -146,12 +146,12 @@ resource "kubernetes_deployment_v1" "operator" {
           }
 
           env {
-            name = "CLUSTER_NAME"
+            name  = "CLUSTER_NAME"
             value = var.cluster_name
           }
 
           env {
-            name = "DNS_ZONE"
+            name  = "DNS_ZONE"
             value = var.dns_zone
           }
 
@@ -182,6 +182,33 @@ resource "kubernetes_deployment_v1" "operator" {
           config_map {
             name = var.config_map_name
           }
+        }
+
+        toleration {
+          effect   = "NoSchedule"
+          key      = "demeter.run/compute-profile"
+          operator = "Exists"
+        }
+
+        toleration {
+          effect   = "NoSchedule"
+          key      = "demeter.run/compute-arch"
+          operator = "Exists"
+        }
+
+        toleration {
+          effect   = "NoSchedule"
+          key      = "demeter.run/availability-sla"
+          operator = "Equal"
+          value    = "consistent"
+        }
+
+        # deprecated
+        toleration {
+          effect   = "NoSchedule"
+          key      = "demeter.run/workload"
+          operator = "Equal"
+          value    = "ephemeral"
         }
       }
     }
