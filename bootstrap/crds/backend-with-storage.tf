@@ -123,6 +123,9 @@ resource "kubernetes_manifest" "backendswithstorage" {
                           "pattern" = "^(\\d+(e\\d+)?|\\d+(\\.\\d+)?(e\\d+)?[EPTGMK]i?)$"
                           "type" = "string"
                         }
+                        "mountPath" = {
+                          "type" = "string"
+                        }
                       }
                       "type" = "object"
                     }

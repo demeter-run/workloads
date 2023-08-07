@@ -26,6 +26,31 @@ import {
 } from '../shared';
 import { buildDefaultEnvVars, buildDnsZone, INITIAL_ENV_VAR_NAMES } from './helpers';
 
+const tolerations = [
+    {
+        key: 'demeter.run/workload',
+        operator: 'Equal',
+        value: 'ephemeral',
+        effect: 'NoSchedule',
+    },
+    {
+        effect: 'NoSchedule',
+        key: 'demeter.run/compute-profile',
+        operator: 'Exists',
+    },
+    {
+        effect: 'NoSchedule',
+        key: 'demeter.run/compute-arch',
+        operator: 'Equal',
+        value: 'x86',
+    },
+    {
+        effect: 'NoSchedule',
+        key: 'demeter.run/availability-sla',
+        operator: 'Exists',
+    },
+];
+
 export async function handleResource(
     ns: string,
     name: string,
@@ -105,6 +130,7 @@ export async function updateResource(
                             $patch: 'replace',
                         },
                     ],
+                    tolerations,
                 },
             },
         },
@@ -331,14 +357,7 @@ function sts(
                 },
                 spec: {
                     automountServiceAccountToken: false,
-                    tolerations: [
-                        {
-                            key: 'demeter.run/workload',
-                            operator: 'Equal',
-                            value: 'ephemeral',
-                            effect: 'NoSchedule',
-                        },
-                    ],
+                    tolerations,
                     securityContext: {
                         fsGroup: 1000,
                     },

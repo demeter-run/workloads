@@ -10,6 +10,7 @@ export type Spec = GenericWorkload & {
   storage: {
     class: StorageClass,
     size: string,
+    mountPath?: string,
   };
 }
 
