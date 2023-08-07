@@ -58,6 +58,11 @@ variable "dns_zone" {
   default     = "demeter.run"
 }
 
+variable "ingress_class" {
+  description = "the ingress class to use for the operator"
+  default     = "nginx"
+}
+
 resource "kubernetes_deployment_v1" "operator" {
   wait_for_rollout = false
 
@@ -153,6 +158,11 @@ resource "kubernetes_deployment_v1" "operator" {
           env {
             name  = "DNS_ZONE"
             value = var.dns_zone
+          }
+
+          env {
+            name  = "INGRESS_CLASS"
+            value = var.ingress_class
           }
 
           resources {
