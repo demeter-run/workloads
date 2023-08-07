@@ -490,7 +490,7 @@ function ingress(name: string, clusterDnsZone: string, owner: CustomResource<Wor
             ],
         },
         spec: {
-            ingressClassName: 'nginx',
+            ingressClassName: process.env.INGRESS_CLASS || 'nginx',
             rules: [
                 {
                     host: `wks-${name}.${clusterDnsZone}`,
