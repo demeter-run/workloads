@@ -18,7 +18,7 @@
         "node": ">=14"
     },
     "dependencies": {
-        "@demeter-sdk/framework": "^1.5.0",
+        "@demeter-sdk/framework": "^2.0.0",
         "@kubernetes/client-node": "^0.17.1"
     }
 }

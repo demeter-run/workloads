@@ -9,12 +9,11 @@ import {
     V1Ingress,
     V1Service,
 } from '@kubernetes/client-node';
-import { getClients, readProjectUnsecure, Network, namespaceToSlug } from '@demeter-sdk/framework';
+import { getClients, readProjectUnsecure, Network, namespaceToSlug, DependencySpec, ServicePlugin, DependencyResource } from '@demeter-sdk/framework';
 import { API_VERSION, API_GROUP, PLURAL, SINGULAR, KIND, DEFAULT_VSCODE_IMAGE } from './constants';
 import { CustomResource, Workspace, StorageClass, CustomResourceResponse } from '@demeter-run/workloads-types';
-import { buildEnvVars, getDependenciesForNetwork, isCardanoNodeEnabled } from '../shared/dependencies';
+import { buildEnvVars, cardanoNodeDep, getDependenciesForNetwork, isCardanoNodeEnabled } from '../shared/dependencies';
 import {
-    buildSocatArgs,
     getComputeDCUPerMin,
     getNetworkFromAnnotations,
     getResourcesFromComputeClass,
@@ -25,6 +24,7 @@ import {
     loadPods,
 } from '../shared';
 import { buildDefaultEnvVars, buildDnsZone, INITIAL_ENV_VAR_NAMES } from './helpers';
+import { buildSocatContainer } from '../shared/cardano-node-helper';
 
 const tolerations = [
     {
@@ -69,10 +69,10 @@ export async function handleResource(
     const deps = await getDependenciesForNetwork(project, network);
     const depsEnvVars = await buildEnvVars(deps, network);
     const defaultEnvVars = buildDefaultEnvVars(spec);
-    const usesCardanoNode = isCardanoNodeEnabled(deps);
+    const cardanoNode = cardanoNodeDep(deps);
     const envVars = [...depsEnvVars, ...defaultEnvVars];
-    const volumesList = volumes(usesCardanoNode);
-    const containerList = containers(spec, envVars, usesCardanoNode);
+    const volumesList = volumes(!!cardanoNode);
+    const containerList = containers(spec, envVars, cardanoNode);
     try {
         await apps.readNamespacedStatefulSet(name, ns);
         await updateResource(ns, name, spec, containerList, volumesList, owner);
@@ -401,7 +401,12 @@ function getImageFromSpec(spec: Workspace.Spec): string {
     }
 }
 
-function containers(spec: Workspace.Spec, envVars: V1EnvVar[], usesCardanoNode: boolean, patch?: boolean): V1Container[] {
+function containers(
+    spec: Workspace.Spec,
+    envVars: V1EnvVar[],
+    cardanoNodeDep: { dependency: DependencyResource; service: ServicePlugin } | null,
+    patch?: boolean,
+): V1Container[] {
     const volumeMounts: V1VolumeMount[] = [
         {
             name: 'home',
@@ -409,7 +414,7 @@ function containers(spec: Workspace.Spec, envVars: V1EnvVar[], usesCardanoNode: 
         },
     ];
 
-    if (usesCardanoNode) {
+    if (!!cardanoNodeDep) {
         volumeMounts.push({
             name: 'ipc',
             mountPath: '/ipc',
@@ -436,22 +441,8 @@ function containers(spec: Workspace.Spec, envVars: V1EnvVar[], usesCardanoNode: 
         },
     ];
 
-    if (usesCardanoNode) {
-        containers.push({
-            name: 'socat',
-            image: 'alpine/socat',
-            securityContext: {
-                runAsUser: 1000,
-                runAsGroup: 1000,
-            },
-            args: [...buildSocatArgs(spec.annotations)],
-            volumeMounts: [
-                {
-                    name: 'ipc',
-                    mountPath: '/ipc',
-                },
-            ],
-        });
+    if (!!cardanoNodeDep) {
+        containers.push(buildSocatContainer(cardanoNodeDep.dependency, cardanoNodeDep.service));
     }
 
     return containers;

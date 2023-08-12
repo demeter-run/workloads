@@ -1,10 +1,9 @@
 import { V1StatefulSet, V1PersistentVolumeClaim, PatchUtils, V1Container, V1EnvVar, V1Volume, V1VolumeMount } from '@kubernetes/client-node';
-import { getClients, readProjectUnsecure, Network, namespaceToSlug } from '@demeter-sdk/framework';
+import { getClients, readProjectUnsecure, Network, namespaceToSlug, DependencyResource, ServicePlugin } from '@demeter-sdk/framework';
 import { API_VERSION, API_GROUP, PLURAL, SINGULAR, KIND } from './constants';
 import { CustomResource, CustomResourceResponse, BackendWithStorage, StorageClass } from '@demeter-run/workloads-types';
-import { buildEnvVars, getDependenciesForNetwork, isCardanoNodeEnabled } from '../shared/dependencies';
+import { buildEnvVars, cardanoNodeDep, getDependenciesForNetwork, isCardanoNodeEnabled } from '../shared/dependencies';
 import {
-    buildSocatArgs,
     getComputeDCUPerMin,
     getNetworkFromAnnotations,
     getResourcesFromComputeClass,
@@ -16,6 +15,7 @@ import {
     workloadVolumes,
 } from '../shared';
 import { checkConfigMapExistsOrCreate, configmap } from '../shared/configmap';
+import { buildSocatContainer } from '../shared/cardano-node-helper';
 
 const tolerations = [
     {
@@ -59,9 +59,9 @@ export async function handleResource(
     const network = getNetworkFromAnnotations(spec.annotations) as Network;
     const deps = await getDependenciesForNetwork(project, network);
     const envVars = await buildEnvVars(deps, network);
-    const usesCardanoNode = isCardanoNodeEnabled(deps);
-    const volumesList = workloadVolumes(name, usesCardanoNode);
-    const containerList = containers(spec, envVars, usesCardanoNode);
+    const cardanoNode = cardanoNodeDep(deps);
+    const volumesList = workloadVolumes(name, !!cardanoNode);
+    const containerList = containers(spec, envVars, cardanoNode);
     try {
         await apps.readNamespacedStatefulSet(name, ns);
         //@TODO sync
@@ -336,7 +336,11 @@ function pvc(name: string, spec: BackendWithStorage.Spec): V1PersistentVolumeCla
     };
 }
 
-function containers(spec: BackendWithStorage.Spec, envVars: V1EnvVar[], usesCardanoNode: boolean): V1Container[] {
+function containers(
+    spec: BackendWithStorage.Spec,
+    envVars: V1EnvVar[],
+    cardanoNodeDep: { dependency: DependencyResource; service: ServicePlugin } | null,
+): V1Container[] {
     const args = spec.args ? spec.args.split(' ') : [];
     const command = spec.command ? spec.command.split(' ') : [];
     const volumeMounts: V1VolumeMount[] = [
@@ -350,7 +354,7 @@ function containers(spec: BackendWithStorage.Spec, envVars: V1EnvVar[], usesCard
         },
     ];
 
-    if (usesCardanoNode) {
+    if (!!cardanoNodeDep) {
         volumeMounts.push({
             name: 'ipc',
             mountPath: '/ipc',
@@ -370,22 +374,8 @@ function containers(spec: BackendWithStorage.Spec, envVars: V1EnvVar[], usesCard
         },
     ];
 
-    if (usesCardanoNode) {
-        containers.push({
-            name: 'socat',
-            image: 'alpine/socat',
-            securityContext: {
-                runAsUser: 1000,
-                runAsGroup: 1000,
-            },
-            args: [...buildSocatArgs(spec.annotations)],
-            volumeMounts: [
-                {
-                    name: 'ipc',
-                    mountPath: '/ipc',
-                },
-            ],
-        });
+    if (!!cardanoNodeDep) {
+        containers.push(buildSocatContainer(cardanoNodeDep.dependency, cardanoNodeDep.service));
     }
 
     return containers;

@@ -9,6 +9,11 @@ import { SERVICE_PLUGIN as ogmiosService } from '@demeter-features/cardano-ogmio
 import { SERVICE_PLUGIN as dBSyncService } from '@demeter-features/cardano-dbsync';
 import { SERVICE_PLUGIN as kupoService } from '@demeter-features/cardano-kupo';
 import { SERVICE_PLUGIN as marloweService } from '@demeter-features/cardano-marlowe';
+import { V2 as dbSyncV2 } from '@demeter-features/cardano-dbsync';
+import { V2 as nodesV2 } from '@demeter-features/cardano-nodes';
+const dbSyncServiceV2 = dbSyncV2.SERVICE_PLUGIN;
+const nodesServiceV2 = nodesV2.SERVICE_PLUGIN;
+
 /**
  * Returns the metadata for a service given a service id
  * @param id 
@@ -47,4 +52,6 @@ export function registerServices() {
   registerService(blockfrostService);
   registerService(dBSyncService);
   registerService(marloweService);
+  registerService(dbSyncServiceV2);
+  registerService(nodesServiceV2);
 }
