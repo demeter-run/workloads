@@ -112,11 +112,6 @@ export async function loadProjectInstances<S, T>(apiGroup: string, apiVersion: s
     return res.body.items;
 }
 
-export function buildSocatArgs(annotations: Record<string, string>) {
-    const nodePrivateDNS = nodes.defaultNodePrivateDns(getNetworkFromAnnotations(annotations));
-    return ['UNIX-LISTEN:/ipc/node.socket,reuseaddr,fork,unlink-early', `TCP-CONNECT:${nodePrivateDNS}:${nodes.N2C_PORT}`];
-}
-
 export function getNetworkFromAnnotations(annotations: Record<string, string>) {
     if ('cardano.demeter.run/network' in annotations) {
         return annotations['cardano.demeter.run/network'];
