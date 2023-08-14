@@ -459,7 +459,7 @@ function volumes(usesCardanoNode: boolean): V1Volume[] | undefined {
     }
 }
 
-function ingress(name: string, clusterDnsZone: string, owner: CustomResource<Workspace.Spec, Workspace.Status>): V1Ingress {
+function ingress(name: string, clusterDnsZone: string[], owner: CustomResource<Workspace.Spec, Workspace.Status>): V1Ingress {
     return {
         metadata: {
             name,
@@ -482,30 +482,28 @@ function ingress(name: string, clusterDnsZone: string, owner: CustomResource<Wor
         },
         spec: {
             ingressClassName: process.env.INGRESS_CLASS || 'nginx',
-            rules: [
-                {
-                    host: `wks-${name}.${clusterDnsZone}`,
-                    http: {
-                        paths: [
-                            {
-                                pathType: 'Prefix',
-                                path: '/',
-                                backend: {
-                                    service: {
-                                        name,
-                                        port: {
-                                            number: 3000,
-                                        },
+            rules: clusterDnsZone.map(dns => ({
+                host: `wks-${name}.${dns}`,
+                http: {
+                    paths: [
+                        {
+                            pathType: 'Prefix',
+                            path: '/',
+                            backend: {
+                                service: {
+                                    name,
+                                    port: {
+                                        number: 3000,
                                     },
                                 },
                             },
-                        ],
-                    },
+                        },
+                    ],
                 },
-            ],
+            })),
             tls: [
                 {
-                    hosts: [`*.${clusterDnsZone}`],
+                    hosts: clusterDnsZone.map(dns => `*.${dns}`),
                 },
             ],
         },
