@@ -4,6 +4,10 @@ variable "image_tag" {}
 
 variable "cluster_name" {}
 
+variable "cluster_alias" {
+  default = "us1"
+}
+
 variable "idle_interval" {
   description = "the inverval for checking workspace uptime and decide if it should be turned off"
   default     = "300"
@@ -153,6 +157,11 @@ resource "kubernetes_deployment_v1" "operator" {
           env {
             name  = "CLUSTER_NAME"
             value = var.cluster_name
+          }
+
+          env {
+            name  = "CLUSTER_ALIAS"
+            value = var.cluster_alias
           }
 
           env {
