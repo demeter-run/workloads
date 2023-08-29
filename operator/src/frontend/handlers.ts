@@ -70,7 +70,7 @@ export async function updateResource(ns: string, name: string, spec: Frontend.Sp
     // patch resource
     const patchBody = {
         metadata: {
-            labels: {
+            annotations: {
                 ...spec.annotations,
             },
         },
@@ -163,6 +163,8 @@ function deployment(
             labels: {
                 'demeter.run/version': owner.apiVersion!.split('/')[1],
                 'demeter.run/kind': owner.kind!,
+            },
+            annotations: {
                 ...spec.annotations,
             },
             ownerReferences: [

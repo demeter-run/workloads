@@ -100,7 +100,9 @@ export async function updateResource(
             labels: {
                 'demeter.run/version': owner.apiVersion!.split('/')[1],
                 'demeter.run/kind': owner.kind!,
-                ...spec.annotations,
+            },
+            annotations: {
+                ...spec.annotations
             },
             // needed for migration from old wks
             ownerReferences: [
@@ -319,7 +321,9 @@ function sts(
             labels: {
                 'demeter.run/version': owner.apiVersion!.split('/')[1],
                 'demeter.run/kind': owner.kind!,
-                ...spec.annotations,
+            },
+            annotations: {
+                ...spec.annotations
             },
             ownerReferences: [
                 {
