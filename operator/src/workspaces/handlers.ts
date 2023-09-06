@@ -28,15 +28,10 @@ import { buildSocatContainer } from '../shared/cardano-node-helper';
 
 const tolerations = [
     {
-        key: 'demeter.run/workload',
-        operator: 'Equal',
-        value: 'ephemeral',
-        effect: 'NoSchedule',
-    },
-    {
         effect: 'NoSchedule',
         key: 'demeter.run/compute-profile',
-        operator: 'Exists',
+        operator: 'Equal',
+        value: 'general-purpose',
     },
     {
         effect: 'NoSchedule',
@@ -47,7 +42,8 @@ const tolerations = [
     {
         effect: 'NoSchedule',
         key: 'demeter.run/availability-sla',
-        operator: 'Exists',
+        operator: 'Equal',
+        value: 'best-effort',
     },
 ];
 
@@ -102,7 +98,7 @@ export async function updateResource(
                 'demeter.run/kind': owner.kind!,
             },
             annotations: {
-                ...spec.annotations
+                ...spec.annotations,
             },
             // needed for migration from old wks
             ownerReferences: [
@@ -323,7 +319,7 @@ function sts(
                 'demeter.run/kind': owner.kind!,
             },
             annotations: {
-                ...spec.annotations
+                ...spec.annotations,
             },
             ownerReferences: [
                 {
