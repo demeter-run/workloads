@@ -71,6 +71,8 @@ export default class WorkspacesOperator extends Operator {
             await this.patchResourceStatus(e.meta, {
                 observedGeneration: metadata?.generation,
                 lastUpdated: Date.now(),
+                openUrl: buildOpenUrl(metadata?.name!, spec),
+                healthUrl: buildHealthUrl(metadata?.name!, metadata?.namespace!),
             });
         }
     }
