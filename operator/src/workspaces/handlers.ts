@@ -72,11 +72,24 @@ export async function handleResource(
     try {
         await apps.readNamespacedStatefulSet(name, ns);
         await updateResource(ns, name, spec, containerList, volumesList, owner);
+        await handleIngress(ns, name, spec, owner);
     } catch (err: any) {
         console.log(err?.body);
         await apps.createNamespacedStatefulSet(ns, sts(name, spec, owner, containerList, volumesList));
         await core.createNamespacedService(ns, service(name, owner));
         await net.createNamespacedIngress(ns, ingress(name, buildDnsZone(spec), owner));
+    }
+}
+
+async function handleIngress(ns: string, name: string, spec: Workspace.Spec, owner: CustomResource<Workspace.Spec, Workspace.Status>) {
+    const { net } = getClients();
+
+    if (spec.enabled) {
+        await net
+            .createNamespacedIngress(ns, ingress(name, buildDnsZone(spec), owner))
+            .catch(() => console.log('Error creating ingress for workspace', name));
+    } else {
+        await net.deleteNamespacedIngress(name, ns).catch(() => console.log('Error deleting ingress for workspace', name));
     }
 }
 
