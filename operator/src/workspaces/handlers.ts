@@ -101,7 +101,7 @@ export async function updateResource(
     volumes: V1Volume[] | undefined,
     owner: CustomResource<Workspace.Spec, Workspace.Status>,
 ): Promise<void> {
-    const { apps, core, net } = getClients();
+    const { apps, core } = getClients();
 
     // patch resource
     const patchBody = {
