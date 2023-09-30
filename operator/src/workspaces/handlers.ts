@@ -84,11 +84,17 @@ export async function handleResource(
 async function handleIngress(ns: string, name: string, spec: Workspace.Spec, owner: CustomResource<Workspace.Spec, Workspace.Status>) {
     const { net } = getClients();
 
-    if (spec.enabled) {
+    const exists = await net.readNamespacedIngress(name, ns).catch(() => false);
+
+    if (spec.enabled && !exists) {
+        console.log('Creating ingress for workspace', name);
         await net
             .createNamespacedIngress(ns, ingress(name, buildDnsZone(spec), owner))
-            .catch(() => console.log('Error creating ingress for workspace', name));
-    } else {
+            .catch((err: any) => console.log('Error creating ingress for workspace', name, err.body));
+    } 
+    
+    if (!spec.enabled && exists) {
+        console.log('Deleting ingress for workspace', name);
         await net.deleteNamespacedIngress(name, ns).catch(() => console.log('Error deleting ingress for workspace', name));
     }
 }
