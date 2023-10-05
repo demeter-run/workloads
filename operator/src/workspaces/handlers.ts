@@ -91,8 +91,8 @@ async function handleIngress(ns: string, name: string, spec: Workspace.Spec, own
         await net
             .createNamespacedIngress(ns, ingress(name, buildDnsZone(spec), owner))
             .catch((err: any) => console.log('Error creating ingress for workspace', name, err.body));
-    } 
-    
+    }
+
     if (!spec.enabled && exists) {
         console.log('Deleting ingress for workspace', name);
         await net.deleteNamespacedIngress(name, ns).catch(() => console.log('Error deleting ingress for workspace', name));
@@ -199,11 +199,12 @@ export async function updateResourceStatus(ns: string, name: string, resource: V
 
     const availableEnvVars = mainContainer?.env?.map(i => i.name).filter(i => !INITIAL_ENV_VAR_NAMES.includes(i));
 
-    const runningStatus = getSTSStatus(resource.status!, resource.spec?.replicas!);
+    const owner = await loadResource(ns, name);
 
+    const runningStatus = getSTSStatus(resource.status!, resource.spec?.replicas!, owner.status.runningStatus);
+    
     let computeDCUPerMin = 0;
     if (runningStatus === 'running') {
-        const owner = await loadResource(ns, name);
         computeDCUPerMin = getComputeDCUPerMin(owner.spec.computeClass, resource.spec?.replicas!);
     }
     let storageDCUPerMin = 0;
