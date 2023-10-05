@@ -134,6 +134,7 @@ export function podToModel(pod: V1Pod): Pod {
 }
 
 export function getSTSStatus(status: V1StatefulSetStatus, desiredReplicas: number, lastStatus?: WorkloadStatus, pods?: V1Pod[]): WorkloadStatus {
+    if (lastStatus === 'expired' && desiredReplicas === 0) return 'expired';
     if (desiredReplicas === 0) return 'paused';
     const { replicas, currentReplicas, updatedReplicas, availableReplicas, readyReplicas } = status;
     const stsPods = pods?.map(podToModel) || [];
