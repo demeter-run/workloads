@@ -10,6 +10,16 @@
         "logo": "/cardano-white.png"
     },
     {
+        "id": "cardano-cli-edge",
+        "weight": 1,
+        "name": "Cardano CLI (Edge)",
+        "description": "Cardano CLI binaries",
+        "vsCodeExtensions": [],
+        "dockerMods": ["ghcr.io/demeter-run/docker-mods-cardano-cli-edge:latest"],
+        "tags": ["cardano", "extras"],
+        "logo": "/cardano-white.png"
+    },
+    {
         "id": "cabal-cache-2023-03",
         "weight": 2,
         "name": "Cabal Cache",
