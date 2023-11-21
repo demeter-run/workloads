@@ -6,6 +6,7 @@ const MAGIC_BY_NETWORK: Record<Network, string> = {
     preprod: '1',
     testnet: '1097911063',
     mainnet: '764824073',
+    sanchonet: '4',
 };
 
 function networkMagic(network: Network): string | undefined {
