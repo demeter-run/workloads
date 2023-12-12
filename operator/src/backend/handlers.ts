@@ -245,7 +245,7 @@ function containers(
             name: 'main',
             resources: getResourcesFromComputeClass(spec.computeClass),
             image: spec.image,
-            imagePullPolicy: 'IfNotPresent',
+            imagePullPolicy: 'Always',
             volumeMounts,
             args,
             command,
