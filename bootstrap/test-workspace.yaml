@@ -1,0 +1,34 @@
+apiVersion: "demeter.run/v1alpha1"
+kind: Workspace
+metadata:
+  name: shitty-garbage-1as1244
+  namespace: prj-yeti-project-3f5c95
+spec:
+  givenName: "Shitty Garbage"
+  ide:
+    type: 'openvscode'
+    image: ghcr.io/demeter-run/workspace-haskell:6f3452e6db713452e9baf7f706c8867933850137
+    authToken: absh123safdjfd
+  annotations: {
+    'cardano.demeter.run/network': 'preview',
+    'demeter.run/size': 'small',
+    'demeter.run/template': 'plutus',
+    'demeter.run/override-dns-zone': 'us1.demeter.builders'
+  }
+  sourceCode:
+    url: "https://github.com/avatxus/marlowe-starter-kit"
+    authorName: "Yeti"
+    authorEmail: "avatxus@gmail.com"
+  extras: ["cabal-cache-2023-03", "nix-2023-03", "nvm-2023-03"]
+  enabled: true
+
+  resources:
+    requests:
+      memory: 2Gi
+      cpu: "1"
+    limits:
+      memory: 2Gi
+      cpu: "1"
+  storage:
+    class: gp3
+    size: 10Gi
