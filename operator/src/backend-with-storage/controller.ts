@@ -58,7 +58,6 @@ export default class BackendWithStorageOperator extends Operator {
         console.log('UPDATING STATUS');
         if ((!spec.enabled && RUNNING_STATUSES.includes(status.runningStatus)) || (spec.enabled && status.runningStatus === 'paused')) {
             await this.patchResourceStatus(e.meta, {
-                runningStatus: 'syncing',
                 startTime: spec.enabled ? Date.now() : 0,
             });
         }

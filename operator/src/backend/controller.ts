@@ -3,7 +3,7 @@ import Operator, { ResourceEventType, ResourceEvent } from '@dot-i/k8s-operator'
 import { API_VERSION, API_GROUP, PLURAL } from './constants';
 import { handleResource } from './handlers';
 
-const RUNNING_STATUSES = ['running', 'provisioning', 'syncing', 'degraded', 'error']
+const RUNNING_STATUSES = ['running', 'provisioning', 'syncing', 'degraded', 'error'];
 
 export default class BackendOperator extends Operator {
     constructor() {
@@ -56,9 +56,9 @@ export default class BackendOperator extends Operator {
         const object = e.object as CustomResource<Backend.Spec, Backend.Status>;
         const { metadata, status, spec } = object;
         console.log('UPDATING STATUS');
+
         if ((!spec.enabled && RUNNING_STATUSES.includes(status.runningStatus)) || (spec.enabled && status.runningStatus === 'paused')) {
             await this.patchResourceStatus(e.meta, {
-                runningStatus: 'syncing',
                 startTime: spec.enabled ? Date.now() : 0,
             });
         }

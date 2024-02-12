@@ -67,7 +67,7 @@ export async function handleResource(
         // await apps.replaceNamespacedStatefulSet(name, ns, sts(name, spec, owner, containerList, volumesList));
     } catch (err: any) {
         console.log(err?.body);
-        await core.createNamespacedConfigMap(ns, configmap(name, spec, owner));
+        await core.createNamespacedConfigMap(ns, configmap(name, spec, owner)).catch(err => console.log('configmap already exists'));
         await apps.createNamespacedStatefulSet(ns, sts(name, spec, owner, containerList, volumesList));
     }
 }

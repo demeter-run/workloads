@@ -16,42 +16,42 @@ const nodesServiceV2 = nodesV2.SERVICE_PLUGIN;
 
 /**
  * Returns the metadata for a service given a service id
- * @param id 
- * @returns 
+ * @param id
+ * @returns
  */
-export function getServiceMetadata(id: string): ServiceMetadata {
-  const service = getServicePlugin(id);
+export function getServiceMetadata(id: string): ServiceMetadata | null {
+    const service = getServicePlugin(id);
 
-  if (!service) throw new Error(`Service with id: ${id} was not found`);
+    if (!service) return null;
 
-  return service.metadata;
+    return service.metadata;
 }
 
 /**
  * Returns the reference to the service plugin given a service id
- * @param id 
- * @returns 
+ * @param id
+ * @returns
  */
-export function getService(id: string): ServicePlugin {
-  const service = getServicePlugin(id);
-  if (!service) throw new Error(`Service with id: ${id} was not found`);
-  return service;
+export function getService(id: string): ServicePlugin | null {
+    const service = getServicePlugin(id);
+
+    if (!service) return null;
+    return service;
 }
 
-
 /**
- * The console has awareness of the service and is responsible of 
+ * The console has awareness of the service and is responsible of
  * registering the services available with access from its user interface
  */
 export function registerServices() {
-  registerService(submitApiService);
-  registerService(nodesService);
-  registerService(ogmiosService);
-  registerService(kuberService);
-  registerService(kupoService);
-  registerService(blockfrostService);
-  registerService(dBSyncService);
-  registerService(marloweService);
-  registerService(dbSyncServiceV2);
-  registerService(nodesServiceV2);
+    registerService(submitApiService);
+    registerService(nodesService);
+    registerService(ogmiosService);
+    registerService(kuberService);
+    registerService(kupoService);
+    registerService(blockfrostService);
+    registerService(dBSyncService);
+    registerService(marloweService);
+    registerService(dbSyncServiceV2);
+    registerService(nodesServiceV2);
 }
