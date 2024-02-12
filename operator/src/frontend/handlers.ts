@@ -55,7 +55,7 @@ export async function handleResource(
         await updateResource(ns, name, spec, containerList, volumesList);
     } catch (err: any) {
         console.log(err?.body);
-        await core.createNamespacedConfigMap(ns, configmap(name, spec, owner));
+        await core.createNamespacedConfigMap(ns, configmap(name, spec, owner)).catch(err => console.log('configmap already exists'));
         await apps.createNamespacedDeployment(ns, deployment(name, spec, owner, containerList, volumesList));
     }
 }

@@ -13,6 +13,7 @@ export async function getDependenciesForNetwork(project: ProjectSpec, network: N
 export function isCardanoNodeEnabled(deps: DependencyResource[]): boolean {
     for (const dep of deps) {
         const service = getService(dep.spec.serviceId);
+        if (!service) continue;
         if (service.metadata.kind === 'CardanoNode') {
             return true;
         }
@@ -23,6 +24,7 @@ export function isCardanoNodeEnabled(deps: DependencyResource[]): boolean {
 export function cardanoNodeDep(deps: DependencyResource[]): { dependency: DependencyResource; service: ServicePlugin } | null {
     for (const dep of deps) {
         const service = getService(dep.spec.serviceId);
+        if (!service) continue;
         if (service.metadata.kind === 'CardanoNode') {
             return { dependency: dep, service };
         }
@@ -35,6 +37,7 @@ export async function buildEnvVars(deps: DependencyResource[], network: Network)
 
     for (const dep of deps) {
         const service = getService(dep.spec.serviceId);
+        if (!service) continue;
         if (service.metadata.kind === 'CardanoNode') {
             const envVars = getCardanoNodeEnvVars(dep, service);
             output.push(...envVars);
