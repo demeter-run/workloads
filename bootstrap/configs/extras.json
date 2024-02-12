@@ -93,7 +93,7 @@
         "id": "golang-2023-03",
         "weight": 4,
         "name": "Golang",
-        "description": "Good for creating projects using CloudStruct Ouroboros library.",
+        "description": "Good for creating projects using Blink Labs gOuroboros library.",
         "vsCodeExtensions": ["golang.Go"],
         "dockerMods": ["linuxserver/mods:code-server-golang"],
         "tags": ["language"],
