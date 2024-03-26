@@ -1,7 +1,7 @@
 import { DependencyResource, DependencySpec, EnvVar, Network, ServicePlugin, ServicePort } from '@demeter-sdk/framework';
 import { V1Container } from '@kubernetes/client-node';
 
-const MAGIC_BY_NETWORK: Record<Network, string> = {
+const MAGIC_BY_NETWORK: Record<string, string> = {
     preview: '2',
     preprod: '1',
     testnet: '1097911063',
