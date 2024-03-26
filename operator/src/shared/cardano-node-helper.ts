@@ -7,6 +7,8 @@ const MAGIC_BY_NETWORK: Record<Network, string> = {
     testnet: '1097911063',
     mainnet: '764824073',
     sanchonet: '4',
+    'cc-private': '5',
+    'vector-testnet': '1177'
 };
 
 function networkMagic(network: Network): string | undefined {
