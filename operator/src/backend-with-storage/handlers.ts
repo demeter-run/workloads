@@ -16,6 +16,7 @@ import {
 } from '../shared';
 import { checkConfigMapExistsOrCreate, configmap } from '../shared/configmap';
 import { buildSocatContainer } from '../shared/cardano-node-helper';
+import { buildPortEnvVars } from '../shared/ports';
 
 const tolerations = [
     {
@@ -55,7 +56,9 @@ export async function handleResource(
 
     const network = getNetworkFromAnnotations(spec.annotations) as Network;
     const deps = await getDependenciesForNetwork(project, network);
-    const envVars = await buildEnvVars(deps, network);
+    const portEnvVars = await buildPortEnvVars(project, network);
+    const depsEnvVars = await buildEnvVars(deps, network);
+    const envVars = [...depsEnvVars, ...portEnvVars];
     const cardanoNode = cardanoNodeDep(deps);
     const volumesList = workloadVolumes(name, !!cardanoNode);
     const containerList = containers(spec, envVars, cardanoNode);

@@ -1,5 +1,6 @@
-import { DependencyResource, DependencySpec, EnvVar, Network, ServicePlugin, ServicePort } from '@demeter-sdk/framework';
+import { DependencyResource, EnvVar, Network, ServicePlugin, ServicePort } from '@demeter-sdk/framework';
 import { V1Container } from '@kubernetes/client-node';
+import { ServiceInstanceWithStatus } from '../services';
 
 const MAGIC_BY_NETWORK: Record<string, string> = {
     preview: '2',
@@ -43,6 +44,20 @@ export function getCardanoNodeEnvVars(dep: DependencyResource, service: ServiceP
     const nodePrivateDNS = nodePrivateDns(dep, service);
     const host = nodePrivateDNS.split(':')[0];
     const port = nodePrivateDNS.split(':')[1];
+    return [
+        { name: 'CARDANO_NODE_HOST', value: host },
+        { name: 'CARDANO_NODE_PORT', value: port },
+        { name: 'CARDANO_NODE_MAGIC', value: networkMagic(network)! },
+        { name: 'CARDANO_TESTNET_MAGIC', value: networkMagic(network)! },
+        { name: 'CARDANO_NODE_NETWORK_ID', value: networkMagic(network)! },
+        { name: 'CARDANO_NODE_SOCKET_PATH', value: '/ipc/node.socket' },
+    ];
+}
+
+export function getCardanoNodePortEnvVars(instance: ServiceInstanceWithStatus): EnvVar[] {
+    const network = instance.spec.network;
+    const host = instance.status?.authenticatedEndpointUrl || 'provisioning...';
+    const port = 9443;
     return [
         { name: 'CARDANO_NODE_HOST', value: host },
         { name: 'CARDANO_NODE_PORT', value: port },

@@ -16,6 +16,7 @@
     },
     "dependencies": {
         "@demeter-features/cardano-blockfrost": "^1.1.2",
+        "@demeter-features/cardano-blockfrost-port": "*",
         "@demeter-features/cardano-dbsync": "^2.0.0",
         "@demeter-features/cardano-kuber": "^1.1.7",
         "@demeter-features/cardano-kupo": "^1.1.7",

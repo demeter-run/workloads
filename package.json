@@ -3,7 +3,8 @@
   "private": true,
   "workspaces": [
     "operator",
-    "types"
+    "types",
+    "../demeter/features/cardano-blockfrost-port/client"
   ],
   "devDependencies": {
     "typescript": "^4.7.4"
