@@ -13,10 +13,11 @@ export function parseInstanceToEnvVars(instance: ServiceInstanceWithStatus, kind
         case 'CardanoNodePort':
             return getCardanoNodePortEnvVars(instance)
         case 'MarlowePort':
+            const rt_host = `${instance.spec.network}-${instance.spec.marlowe_version}-rt.ext-marlowe-m1.svc.cluster.local`;
             return [
                 { name: "MARLOWE_RT_WEBSERVER_HOST", value: removeSchema(instance.status.authenticatedEndpointUrl)},
                 { name: "MARLOWE_RT_WEBSERVER_PORT", value: "3700"},
-                { name: "MARLOWE_RT_HOST", value: ""},  // TODO: Missing tcp service
+                { name: "MARLOWE_RT_HOST", value: rt_host},
                 { name: "MARLOWE_RT_PORT", value: "3701"},
 
             ];
