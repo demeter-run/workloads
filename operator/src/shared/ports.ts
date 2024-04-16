@@ -3,40 +3,25 @@ import type { Network, ServiceMetadata } from '@demeter-sdk/framework';
 import { getService, ServiceInstanceWithStatus, getAllServices } from '../services';
 import { getCardanoNodePortEnvVars } from './cardano-node-helper';
 
-export const ENV_PREFIX_BY_KIND: Record<string, string> = {
-    OgmiosPort: 'OGMIOS',
-    DbSyncPort: 'DBSYNC',
-    SubmitApiPort: 'SUBMIT_API',
-    BlockfrostPort: 'BLOCKFROST',
-    KupoPort: 'KUPO',
-    CardanoNodePort: 'CARDANO_NODE',
-    MarlowePort: 'MARLOWE',
-    UtxoRpcPort: 'UTXO_RPC',
-};
+
+function removeSchema(url: string): string {
+  return url.replace("https://", '').replace("http://", '')
+}
 
 export function parseInstanceToEnvVars(instance: ServiceInstanceWithStatus, kind: string): EnvVar[] {
     switch (kind) {
         case 'CardanoNodePort':
             return getCardanoNodePortEnvVars(instance)
-        case 'DbSyncPort':
-            let hostname = `dbsync-v3.demeter.run`;
-            let database = `dbsync-${instance.spec.network}`;
-            let connectionString = `postgresql://${instance.status.username}:${instance.status.password}@${hostname}:${5432}/${database}`;
+        case 'MarlowePort':
             return [
-                { name: `DBSYNC_HOST`, value: hostname },
-                { name: `DBSYNC_DATABASE`, value: database },
-                { name: `DBSYNC_PORT`, value: 5432 },
-                { name: `DBSYNC_USERNAME`, value: instance.status.username },
-                { name: `DBSYNC_PASSWORD`, value: instance.status.password },
-                { name: `DBSYNC_URI`, value: connectionString },
+                { name: "MARLOWE_RT_WEBSERVER_HOST", value: removeSchema(instance.status.authenticatedEndpointUrl)},
+                { name: "MARLOWE_RT_WEBSERVER_PORT", value: "3700"},
+                { name: "MARLOWE_RT_HOST", value: ""},  // TODO: Missing tcp service
+                { name: "MARLOWE_RT_PORT", value: "3701"},
+
             ];
         default: {
-            const prefix = ENV_PREFIX_BY_KIND[kind];
-            return [
-                { name: `${prefix}_API_KEY`, value: instance.status.authToken },
-                { name: `${prefix}_ENDPOINT`, value: instance.status.endpointUrl },
-                { name: `${prefix}_AUTHENTICATED_ENDPOINT`, value: instance.status.authenticatedEndpointUrl },
-            ];
+            return [];
         }
     }
 }
