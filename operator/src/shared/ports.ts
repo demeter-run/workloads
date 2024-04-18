@@ -36,10 +36,8 @@ export async function buildPortEnvVars(project: ProjectSpec, network: Network): 
         return { metadata: service.metadata, instances: service.listProjectInstances(project) as Promise<ServiceInstanceWithStatus[]> };
     });
 
-    console.log(projectInstances);
     for (const projectInstance of projectInstances) {
         const inst = await projectInstance.instances;
-        console.log(inst);
         inst.forEach(item => {
             if (item.spec.network === network) {
                 const envVars = parseInstanceToEnvVars(item, projectInstance.metadata.kind);
