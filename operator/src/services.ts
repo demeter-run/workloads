@@ -18,6 +18,7 @@ const nodesServiceV2 = nodesV2.SERVICE_PLUGIN;
 
 
 export type ServiceInstanceWithStatus = ServiceInstance & { status: any; spec: any };
+export type ServiceInstanceWithStatusAndKind = ServiceInstanceWithStatus & { kind: string };
 
 /**
  * Returns all the registered services metadata

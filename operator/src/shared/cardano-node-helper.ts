@@ -85,3 +85,24 @@ export function buildSocatContainer(dep: DependencyResource, service: ServicePlu
         ],
     };
 }
+
+export function buildSocatContainerForPort(instance: ServiceInstanceWithStatus): V1Container {
+    return {
+        name: 'socat',
+        image: 'alpine/socat',
+        securityContext: {
+            runAsUser: 1000,
+            runAsGroup: 1000,
+        },
+        args: [
+            'UNIX-LISTEN:/ipc/node.socket,reuseaddr,fork,unlink-early',
+            `OPENSSL:${instance.status.authenticatedEndpointUrl}`
+        ],
+        volumeMounts: [
+            {
+                name: 'ipc',
+                mountPath: '/ipc',
+            },
+        ],
+    };
+}

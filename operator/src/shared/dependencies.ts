@@ -1,6 +1,6 @@
 import { DependencyResource, listDependencies, loadDependencyConnections, Network, ProjectSpec, ServicePlugin } from '@demeter-sdk/framework';
 import { V1EnvVar } from '@kubernetes/client-node';
-import { getService } from '../services';
+import { getService, ServiceInstanceWithStatusAndKind } from '../services';
 import { getNetworkFromAnnotations } from '.';
 import { getCardanoNodeEnvVars } from './cardano-node-helper';
 
@@ -19,6 +19,19 @@ export function isCardanoNodeEnabled(deps: DependencyResource[]): boolean {
         }
     }
     return false;
+}
+
+export function cardanoNodePort(instances: ServiceInstanceWithStatusAndKind[]): ServiceInstanceWithStatusAndKind | null{
+    for (const instance of instances) {
+        if (instance.kind === 'CardanoNode') {
+            return instance;
+        }
+    }
+    return null;
+}
+
+export function isCardanoNodePortEnabled(instances: ServiceInstanceWithStatusAndKind[]): boolean {
+    return !!cardanoNodePort(instances);
 }
 
 export function cardanoNodeDep(deps: DependencyResource[]): { dependency: DependencyResource; service: ServicePlugin } | null {

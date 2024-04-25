@@ -12,7 +12,7 @@ import {
 import { getClients, readProjectUnsecure, Network, namespaceToSlug, DependencySpec, ServicePlugin, DependencyResource } from '@demeter-sdk/framework';
 import { API_VERSION, API_GROUP, PLURAL, SINGULAR, KIND, DEFAULT_VSCODE_IMAGE } from './constants';
 import { CustomResource, Workspace, StorageClass, CustomResourceResponse } from '@demeter-run/workloads-types';
-import { buildEnvVars, cardanoNodeDep, getDependenciesForNetwork, isCardanoNodeEnabled } from '../shared/dependencies';
+import { buildEnvVars, cardanoNodeDep, cardanoNodePort, getDependenciesForNetwork, isCardanoNodeEnabled } from '../shared/dependencies';
 import {
     getComputeDCUPerMin,
     getNetworkFromAnnotations,
@@ -24,8 +24,9 @@ import {
     loadPods,
 } from '../shared';
 import { buildDefaultEnvVars, buildDnsZone, INITIAL_ENV_VAR_NAMES } from './helpers';
-import { buildSocatContainer } from '../shared/cardano-node-helper';
-import { buildPortEnvVars } from '../shared/ports';
+import { buildSocatContainer, buildSocatContainerForPort } from '../shared/cardano-node-helper';
+import { buildPortEnvVars, getPortsForNetwork } from '../shared/ports';
+import { ServiceInstanceWithStatusAndKind } from '../services';
 
 const tolerations = [
     {
@@ -64,13 +65,15 @@ export async function handleResource(
 
     const network = getNetworkFromAnnotations(spec.annotations) as Network;
     const deps = await getDependenciesForNetwork(project, network);
+    const ports = await getPortsForNetwork(project, network);
+    const portEnvVars = await buildPortEnvVars(ports);
     const depsEnvVars = await buildEnvVars(deps, network);
-    const portEnvVars = await buildPortEnvVars(project, network);
     const defaultEnvVars = buildDefaultEnvVars(spec);
     const cardanoNode = cardanoNodeDep(deps);
+    const cardanoNodePortInstance = cardanoNodePort(ports);
     const envVars = [...depsEnvVars, ...defaultEnvVars, ...portEnvVars];
     const volumesList = volumes(!!cardanoNode);
-    const containerList = containers(spec, envVars, cardanoNode);
+    const containerList = containers(spec, envVars, cardanoNode, cardanoNodePortInstance);
     try {
         await apps.readNamespacedStatefulSet(name, ns);
         await updateResource(ns, name, spec, containerList, volumesList, owner);
@@ -427,6 +430,7 @@ function containers(
     spec: Workspace.Spec,
     envVars: V1EnvVar[],
     cardanoNodeDep: { dependency: DependencyResource; service: ServicePlugin } | null,
+    cardanoNodePort: ServiceInstanceWithStatusAndKind | null,
     patch?: boolean,
 ): V1Container[] {
     const volumeMounts: V1VolumeMount[] = [
@@ -436,7 +440,7 @@ function containers(
         },
     ];
 
-    if (!!cardanoNodeDep) {
+    if (!!cardanoNodePort || !!cardanoNodeDep) {
         volumeMounts.push({
             name: 'ipc',
             mountPath: '/ipc',
@@ -463,7 +467,9 @@ function containers(
         },
     ];
 
-    if (!!cardanoNodeDep) {
+    if (!!cardanoNodePort) {
+        containers.push(buildSocatContainerForPort(cardanoNodePort));
+    } else if (!!cardanoNodeDep) {
         containers.push(buildSocatContainer(cardanoNodeDep.dependency, cardanoNodeDep.service));
     }
 
