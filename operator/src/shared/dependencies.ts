@@ -23,7 +23,7 @@ export function isCardanoNodeEnabled(deps: DependencyResource[]): boolean {
 
 export function cardanoNodePort(instances: ServiceInstanceWithStatusAndKind[]): ServiceInstanceWithStatusAndKind | null{
     for (const instance of instances) {
-        if (instance.kind === 'CardanoNode') {
+        if (instance.kind === 'CardanoNodePort') {
             return instance;
         }
     }
