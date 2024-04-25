@@ -3,6 +3,7 @@ import { V1EnvVar } from '@kubernetes/client-node';
 import { getService, ServiceInstanceWithStatusAndKind } from '../services';
 import { getNetworkFromAnnotations } from '.';
 import { getCardanoNodeEnvVars } from './cardano-node-helper';
+import { portExists } from './ports';
 
 export async function getDependenciesForNetwork(project: ProjectSpec, network: Network) {
     const deps = await listDependencies(project);
@@ -19,19 +20,6 @@ export function isCardanoNodeEnabled(deps: DependencyResource[]): boolean {
         }
     }
     return false;
-}
-
-export function cardanoNodePort(instances: ServiceInstanceWithStatusAndKind[]): ServiceInstanceWithStatusAndKind | null{
-    for (const instance of instances) {
-        if (instance.kind === 'CardanoNodePort') {
-            return instance;
-        }
-    }
-    return null;
-}
-
-export function isCardanoNodePortEnabled(instances: ServiceInstanceWithStatusAndKind[]): boolean {
-    return !!cardanoNodePort(instances);
 }
 
 export function cardanoNodeDep(deps: DependencyResource[]): { dependency: DependencyResource; service: ServicePlugin } | null {
@@ -63,4 +51,18 @@ export async function buildEnvVars(deps: DependencyResource[], network: Network)
         }
     }
     return output;
+}
+
+// check if we should filter some dependencies because ports exists
+
+export function cleanDependencies(deps: DependencyResource[], ports: ServiceInstanceWithStatusAndKind[]): DependencyResource[] {
+    const depsToIgnore: string[] = [];
+    if (portExists(ports, 'CardanoNodePort')) {
+        depsToIgnore.push('CardanoNode');
+    }
+    if (portExists(ports, 'MarlowePort')) {
+        depsToIgnore.push('Marlowe');
+    }
+
+    return deps.filter(dep => !depsToIgnore.includes(dep.spec.serviceKind));
 }

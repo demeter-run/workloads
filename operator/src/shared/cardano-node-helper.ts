@@ -9,7 +9,6 @@ const MAGIC_BY_NETWORK: Record<string, string> = {
     testnet: '1097911063',
     mainnet: '764824073',
     sanchonet: '4',
-    'cc-private': '5',
     'vector-testnet': '1177',
 };
 
@@ -47,7 +46,7 @@ export function getCardanoNodeEnvVars(dep: DependencyResource, service: ServiceP
     const port = nodePrivateDNS.split(':')[1];
     return [
         { name: 'CARDANO_NODE_HOST', value: host },
-        { name: 'CARDANO_NODE_PORT', value: port },
+        { name: 'CARDANO_NODE_PORT', value: String(port) },
         { name: 'CARDANO_NODE_MAGIC', value: networkMagic(network)! },
         { name: 'CARDANO_TESTNET_MAGIC', value: networkMagic(network)! },
         { name: 'CARDANO_NODE_NETWORK_ID', value: networkMagic(network)! },
@@ -61,7 +60,7 @@ export function getCardanoNodePortEnvVars(instance: ServiceInstanceWithStatus): 
     const port = CARDANO_NODE_PORT_PORT;
     return [
         { name: 'CARDANO_NODE_HOST', value: host },
-        { name: 'CARDANO_NODE_PORT', value: port },
+        { name: 'CARDANO_NODE_PORT', value: String(port) },
         { name: 'CARDANO_NODE_MAGIC', value: networkMagic(network)! },
         { name: 'CARDANO_TESTNET_MAGIC', value: networkMagic(network)! },
         { name: 'CARDANO_NODE_NETWORK_ID', value: networkMagic(network)! },
