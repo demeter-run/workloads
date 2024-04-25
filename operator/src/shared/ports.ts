@@ -1,6 +1,6 @@
 import { EnvVar, ProjectSpec } from '@demeter-sdk/framework';
 import type { Network, ServiceMetadata } from '@demeter-sdk/framework';
-import { getService, ServiceInstanceWithStatus, getAllServices } from '../services';
+import { getService, ServiceInstanceWithStatus, ServiceInstanceWithStatusAndKind, getAllServices } from '../services';
 import { getCardanoNodePortEnvVars } from './cardano-node-helper';
 
 
@@ -8,8 +8,29 @@ function removeSchema(url: string): string {
   return url.replace("https://", '').replace("http://", '')
 }
 
-export function parseInstanceToEnvVars(instance: ServiceInstanceWithStatus, kind: string): EnvVar[] {
-    switch (kind) {
+export async function getPortsForNetwork(project: ProjectSpec, network: Network): Promise<ServiceInstanceWithStatusAndKind[]> {
+    const output: ServiceInstanceWithStatusAndKind[] = [];
+    const services = (await getAllServices()).filter(service => service.key.includes('port'));
+
+    const projectInstances: { metadata: ServiceMetadata; instances: Promise<ServiceInstanceWithStatus[]> }[] = services.map(svc => {
+        const service = getService(svc.key)!;
+        return { metadata: service.metadata, instances: service.listProjectInstances(project) as Promise<ServiceInstanceWithStatus[]> };
+    });
+
+    for (const projectInstance of projectInstances) {
+        const inst = await projectInstance.instances;
+        inst.forEach(instance => {
+          if (instance.spec.network === network) {
+            output.push({ ...instance, kind: projectInstance.metadata.kind })
+          }
+        })
+        output.push()
+    }
+    return output;
+}
+
+export function parseInstanceToEnvVars(instance: ServiceInstanceWithStatusAndKind): EnvVar[] {
+    switch (instance.kind) {
         case 'CardanoNodePort':
             return getCardanoNodePortEnvVars(instance)
         case 'MarlowePort':
@@ -27,23 +48,11 @@ export function parseInstanceToEnvVars(instance: ServiceInstanceWithStatus, kind
     }
 }
 
-export async function buildPortEnvVars(project: ProjectSpec, network: Network): Promise<EnvVar[]> {
+export async function buildPortEnvVars(instances: ServiceInstanceWithStatusAndKind[]): Promise<EnvVar[]> {
     const output: EnvVar[] = [];
-    const services = (await getAllServices()).filter(service => service.key.includes('port'));
-
-    const projectInstances: { metadata: ServiceMetadata; instances: Promise<ServiceInstanceWithStatus[]> }[] = services.map(svc => {
-        const service = getService(svc.key)!;
-        return { metadata: service.metadata, instances: service.listProjectInstances(project) as Promise<ServiceInstanceWithStatus[]> };
+    instances.forEach(item => {
+        const envVars = parseInstanceToEnvVars(item);
+        output.push(...envVars);
     });
-
-    for (const projectInstance of projectInstances) {
-        const inst = await projectInstance.instances;
-        inst.forEach(item => {
-            if (item.spec.network === network) {
-                const envVars = parseInstanceToEnvVars(item, projectInstance.metadata.kind);
-                output.push(...envVars);
-            }
-        });
-    }
     return output
 }

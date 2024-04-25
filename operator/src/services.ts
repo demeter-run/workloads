@@ -18,6 +18,7 @@ const nodesServiceV2 = nodesV2.SERVICE_PLUGIN;
 
 
 export type ServiceInstanceWithStatus = ServiceInstance & { status: any; spec: any };
+export type ServiceInstanceWithStatusAndKind = ServiceInstanceWithStatus & { kind: string };
 
 /**
  * Returns all the registered services metadata
@@ -30,7 +31,10 @@ export async function getAllServices(): Promise<ServiceMetadata[]> {
 
     // checks the service feature flag is enabled
     for (const id of serviceIds) {
-        res.push(getServiceMetadata(id));
+        const metadata = getServiceMetadata(id);
+        if (metadata) {
+            res.push(metadata);
+        }
     }
 
     return res;

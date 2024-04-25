@@ -2,6 +2,7 @@ import { DependencyResource, EnvVar, Network, ServicePlugin, ServicePort } from 
 import { V1Container } from '@kubernetes/client-node';
 import { ServiceInstanceWithStatus } from '../services';
 
+const CARDANO_NODE_PORT_PORT = 9443;
 const MAGIC_BY_NETWORK: Record<string, string> = {
     preview: '2',
     preprod: '1',
@@ -57,7 +58,7 @@ export function getCardanoNodeEnvVars(dep: DependencyResource, service: ServiceP
 export function getCardanoNodePortEnvVars(instance: ServiceInstanceWithStatus): EnvVar[] {
     const network = instance.spec.network;
     const host = instance.status?.authenticatedEndpointUrl || 'provisioning...';
-    const port = 9443;
+    const port = CARDANO_NODE_PORT_PORT;
     return [
         { name: 'CARDANO_NODE_HOST', value: host },
         { name: 'CARDANO_NODE_PORT', value: port },
@@ -77,6 +78,27 @@ export function buildSocatContainer(dep: DependencyResource, service: ServicePlu
             runAsGroup: 1000,
         },
         args: buildSocatArgs(dep, service),
+        volumeMounts: [
+            {
+                name: 'ipc',
+                mountPath: '/ipc',
+            },
+        ],
+    };
+}
+
+export function buildSocatContainerForPort(instance: ServiceInstanceWithStatus): V1Container {
+    return {
+        name: 'socat',
+        image: 'alpine/socat',
+        securityContext: {
+            runAsUser: 1000,
+            runAsGroup: 1000,
+        },
+        args: [
+            'UNIX-LISTEN:/ipc/node.socket,reuseaddr,fork,unlink-early',
+            `OPENSSL:${instance.status?.authenticatedEndpointUrl}:${CARDANO_NODE_PORT_PORT}`
+        ],
         volumeMounts: [
             {
                 name: 'ipc',
