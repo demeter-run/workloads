@@ -2,7 +2,7 @@ import { V1StatefulSet, V1PersistentVolumeClaim, PatchUtils, V1Container, V1EnvV
 import { getClients, readProjectUnsecure, Network, namespaceToSlug, DependencyResource, ServicePlugin } from '@demeter-sdk/framework';
 import { API_VERSION, API_GROUP, PLURAL, SINGULAR, KIND } from './constants';
 import { CustomResource, CustomResourceResponse, BackendWithStorage, StorageClass } from '@demeter-run/workloads-types';
-import { buildEnvVars, cardanoNodeDep, getDependenciesForNetwork, isCardanoNodeEnabled } from '../shared/dependencies';
+import { buildEnvVars, cardanoNodeDep, cardanoNodePort, getDependenciesForNetwork, isCardanoNodeEnabled } from '../shared/dependencies';
 import {
     getComputeDCUPerMin,
     getNetworkFromAnnotations,
@@ -62,6 +62,7 @@ export async function handleResource(
     const depsEnvVars = await buildEnvVars(deps, network);
     const envVars = [...depsEnvVars, ...portEnvVars];
     const cardanoNode = cardanoNodeDep(deps);
+    const cardanoNodePortInstance = cardanoNodePort(ports);
     const volumesList = workloadVolumes(name, !!cardanoNode);
     const containerList = containers(spec, envVars, cardanoNode, cardanoNodePortInstance);
     try {

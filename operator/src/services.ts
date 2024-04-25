@@ -31,7 +31,7 @@ export async function getAllServices(): Promise<ServiceMetadata[]> {
 
     // checks the service feature flag is enabled
     for (const id of serviceIds) {
-        res.push(getServiceMetadata(id));
+        res.push(getServiceMetadata(id)!);
     }
 
     return res;
