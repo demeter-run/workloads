@@ -38,9 +38,9 @@ export function parseInstanceToEnvVars(instance: ServiceInstanceWithStatusAndKin
             const rt_host = `${instance.spec.network}-${instance.spec.marloweVersion || DEFAULT_MARLOWE_VERSION}-rt.ext-marlowe-m1.svc.cluster.local`;
             return [
                 { name: 'MARLOWE_RT_WEBSERVER_HOST', value: removeSchema(instance.status.authenticatedEndpointUrl) },
-                { name: 'MARLOWE_RT_WEBSERVER_PORT', value: '3700' },
+                { name: 'MARLOWE_RT_WEBSERVER_PORT', value: '443' },
                 { name: 'MARLOWE_RT_HOST', value: rt_host },
-                { name: 'MARLOWE_RT_PORT', value: '3701' },
+                { name: 'MARLOWE_RT_PORT', value: '3700' },
             ];
         default: {
             return [];
