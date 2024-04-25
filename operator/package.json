@@ -16,9 +16,6 @@
     },
     "dependencies": {
         "@demeter-features/cardano-blockfrost": "^1.1.2",
-        "@demeter-features/cardano-dbsync": "^2.0.0",
-        "@demeter-features/cardano-kuber": "^1.1.7",
-        "@demeter-features/cardano-kupo": "^1.1.7",
         "@demeter-features/cardano-marlowe": "^1.2.1",
         "@demeter-features/cardano-marlowe-port": "^1.0.0",
         "@demeter-features/cardano-node-port": "^1.0.0",
@@ -26,7 +23,7 @@
         "@demeter-features/cardano-ogmios": "^1.1.6",
         "@demeter-features/cardano-submit-api": "^1.1.4",
         "@demeter-run/workloads-types": "*",
-        "@demeter-sdk/framework": "^2.2.2",
+        "@demeter-sdk/framework": "^2.2.4",
         "@dot-i/k8s-operator": "^1.3.5",
         "@kubernetes/client-node": "^0.17.1",
         "axios": "^1.3.4",

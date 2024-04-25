@@ -2,11 +2,11 @@ import { PatchUtils, V1Container, V1EnvVar, V1Volume, V1VolumeMount, V1Deploymen
 import { getClients, readProjectUnsecure, Network, namespaceToSlug, DependencyResource, ServicePlugin } from '@demeter-sdk/framework';
 import { API_VERSION, API_GROUP, PLURAL } from './constants';
 import { CustomResource, CustomResourceResponse, Frontend, WorkloadStatus } from '@demeter-run/workloads-types';
-import { buildEnvVars, cardanoNodeDep, cardanoNodePort, getDependenciesForNetwork } from '../shared/dependencies';
+import { buildEnvVars, cardanoNodeDep, cleanDependencies, getDependenciesForNetwork } from '../shared/dependencies';
 import { getComputeDCUPerMin, getDeploymentStatus, getNetworkFromAnnotations, getResourcesFromComputeClass, workloadVolumes } from '../shared';
 import { checkConfigMapExistsOrCreate, configmap } from '../shared/configmap';
 import { buildSocatContainer, buildSocatContainerForPort } from '../shared/cardano-node-helper';
-import { buildPortEnvVars, getPortsForNetwork } from '../shared/ports';
+import { buildPortEnvVars, getPortsForNetwork, portExists } from '../shared/ports';
 import { ServiceInstanceWithStatusAndKind } from '../services';
 
 const tolerations = [
@@ -48,12 +48,12 @@ export async function handleResource(
     const deps = await getDependenciesForNetwork(project, network);
     const ports = await getPortsForNetwork(project, network);
     const portEnvVars = await buildPortEnvVars(ports);
-    const depsEnvVars = await buildEnvVars(deps, network);
+    const depsEnvVars = await buildEnvVars(cleanDependencies(deps, ports), network);
     const envVars = [...depsEnvVars, ...portEnvVars];
     const cardanoNode = cardanoNodeDep(deps);
-    const cardanoNodePortInstance = cardanoNodePort(ports);
-    const volumesList = workloadVolumes(name, !!cardanoNode);
-    const containerList = containers(spec, envVars, cardanoNode, cardanoNodePortInstance);
+    const cardanoNodePort = portExists(ports, 'CardanoNodePort');
+    const volumesList = workloadVolumes(name, !!cardanoNode || !!cardanoNodePort);
+    const containerList = containers(spec, envVars, cardanoNode, cardanoNodePort);
     try {
         await apps.readNamespacedDeployment(name, ns);
         await checkConfigMapExistsOrCreate(core, ns, name, spec, owner);

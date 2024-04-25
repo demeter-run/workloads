@@ -2,7 +2,7 @@ import { V1StatefulSet, V1PersistentVolumeClaim, PatchUtils, V1Container, V1EnvV
 import { getClients, readProjectUnsecure, Network, namespaceToSlug, DependencyResource, ServicePlugin } from '@demeter-sdk/framework';
 import { API_VERSION, API_GROUP, PLURAL, SINGULAR, KIND } from './constants';
 import { CustomResource, CustomResourceResponse, BackendWithStorage, StorageClass } from '@demeter-run/workloads-types';
-import { buildEnvVars, cardanoNodeDep, cardanoNodePort, getDependenciesForNetwork, isCardanoNodeEnabled } from '../shared/dependencies';
+import { buildEnvVars, cardanoNodeDep, cleanDependencies, getDependenciesForNetwork } from '../shared/dependencies';
 import {
     getComputeDCUPerMin,
     getNetworkFromAnnotations,
@@ -16,7 +16,7 @@ import {
 } from '../shared';
 import { checkConfigMapExistsOrCreate, configmap } from '../shared/configmap';
 import { buildSocatContainer, buildSocatContainerForPort } from '../shared/cardano-node-helper';
-import { buildPortEnvVars, getPortsForNetwork } from '../shared/ports';
+import { buildPortEnvVars, getPortsForNetwork, portExists } from '../shared/ports';
 import { ServiceInstanceWithStatusAndKind } from '../services';
 
 const tolerations = [
@@ -40,7 +40,6 @@ const tolerations = [
     },
 ];
 
-
 export async function handleResource(
     ns: string,
     name: string,
@@ -59,12 +58,12 @@ export async function handleResource(
     const deps = await getDependenciesForNetwork(project, network);
     const ports = await getPortsForNetwork(project, network);
     const portEnvVars = await buildPortEnvVars(ports);
-    const depsEnvVars = await buildEnvVars(deps, network);
+    const depsEnvVars = await buildEnvVars(cleanDependencies(deps, ports), network);
     const envVars = [...depsEnvVars, ...portEnvVars];
     const cardanoNode = cardanoNodeDep(deps);
-    const cardanoNodePortInstance = cardanoNodePort(ports);
-    const volumesList = workloadVolumes(name, !!cardanoNode);
-    const containerList = containers(spec, envVars, cardanoNode, cardanoNodePortInstance);
+    const cardanoNodePort = portExists(ports, 'CardanoNodePort');
+    const volumesList = workloadVolumes(name, !!cardanoNode || !!cardanoNodePort);
+    const containerList = containers(spec, envVars, cardanoNode, cardanoNodePort);
     try {
         await apps.readNamespacedStatefulSet(name, ns);
         //@TODO sync
@@ -268,7 +267,7 @@ function sts(
                 'demeter.run/kind': owner.kind!,
             },
             annotations: {
-                ...spec.annotations
+                ...spec.annotations,
             },
             ownerReferences: [
                 {

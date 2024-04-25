@@ -12,7 +12,7 @@ import {
 import { getClients, readProjectUnsecure, Network, namespaceToSlug, DependencySpec, ServicePlugin, DependencyResource } from '@demeter-sdk/framework';
 import { API_VERSION, API_GROUP, PLURAL, SINGULAR, KIND, DEFAULT_VSCODE_IMAGE } from './constants';
 import { CustomResource, Workspace, StorageClass, CustomResourceResponse } from '@demeter-run/workloads-types';
-import { buildEnvVars, cardanoNodeDep, cardanoNodePort, getDependenciesForNetwork, isCardanoNodeEnabled } from '../shared/dependencies';
+import { buildEnvVars, cardanoNodeDep, cleanDependencies, getDependenciesForNetwork, isCardanoNodeEnabled } from '../shared/dependencies';
 import {
     getComputeDCUPerMin,
     getNetworkFromAnnotations,
@@ -25,7 +25,7 @@ import {
 } from '../shared';
 import { buildDefaultEnvVars, buildDnsZone, INITIAL_ENV_VAR_NAMES } from './helpers';
 import { buildSocatContainer, buildSocatContainerForPort } from '../shared/cardano-node-helper';
-import { buildPortEnvVars, getPortsForNetwork } from '../shared/ports';
+import { buildPortEnvVars, getPortsForNetwork, portExists } from '../shared/ports';
 import { ServiceInstanceWithStatusAndKind } from '../services';
 
 const tolerations = [
@@ -67,13 +67,13 @@ export async function handleResource(
     const deps = await getDependenciesForNetwork(project, network);
     const ports = await getPortsForNetwork(project, network);
     const portEnvVars = await buildPortEnvVars(ports);
-    const depsEnvVars = await buildEnvVars(deps, network);
     const defaultEnvVars = buildDefaultEnvVars(spec);
-    const cardanoNode = cardanoNodeDep(deps);
-    const cardanoNodePortInstance = cardanoNodePort(ports);
+    const depsEnvVars = await buildEnvVars(cleanDependencies(deps, ports), network);
     const envVars = [...depsEnvVars, ...defaultEnvVars, ...portEnvVars];
-    const volumesList = volumes(!!cardanoNode);
-    const containerList = containers(spec, envVars, cardanoNode, cardanoNodePortInstance);
+    const cardanoNode = cardanoNodeDep(deps);
+    const cardanoNodePort = portExists(ports, 'CardanoNodePort');
+    const volumesList = volumes(!!cardanoNode || !!cardanoNodePort);
+    const containerList = containers(spec, envVars, cardanoNode, cardanoNodePort);
     try {
         await apps.readNamespacedStatefulSet(name, ns);
         await updateResource(ns, name, spec, containerList, volumesList, owner);
@@ -207,7 +207,7 @@ export async function updateResourceStatus(ns: string, name: string, resource: V
     const owner = await loadResource(ns, name);
 
     const runningStatus = getSTSStatus(resource.status!, resource.spec?.replicas!, owner.status.runningStatus);
-    
+
     let computeDCUPerMin = 0;
     if (runningStatus === 'running') {
         computeDCUPerMin = getComputeDCUPerMin(owner.spec.computeClass, resource.spec?.replicas!);
