@@ -128,5 +128,25 @@
         "dockerMods": [],
         "tags": ["extras"],
         "logo": "/jupyter-2.png"
+    },
+    {
+        "id": "marlowe-bin-patch6-2024-05",
+        "weight": 1,
+        "name": "Marlowe Binaries (0.0.6)",
+        "description": "Marlowe Binaries for v0.0.6. Includes marlowe-cli, marlowe-runtime-cli and marlowe-pipe",
+        "vsCodeExtensions": [],
+        "dockerMods": ["ghcr.io/demeter-run/docker-mods-marlowe-bin-patch6:latest"],
+        "tags": ["extras"],
+        "logo": "/marlowe.png"
+    },
+    {
+        "id": "marlowe-bin-v1-2024-05",
+        "weight": 1,
+        "name": "Marlowe Binaries",
+        "description": "Marlowe Binaries for v1.0.0. Includes marlowe-cli, marlowe-oracle and marlowe-pipe",
+        "vsCodeExtensions": [],
+        "dockerMods": ["ghcr.io/demeter-run/docker-mods-marlowe-bin-v1:latest"],
+        "tags": ["extras"],
+        "logo": "/marlowe.png"
     }
 ]
