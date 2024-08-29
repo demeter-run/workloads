@@ -1,5 +1,5 @@
 import { CustomResourceListResponse, ResourceRequest, StorageClass, WorkloadPvc, WorkloadStatus } from '@demeter-run/workloads-types';
-import { Pod, getClients } from '@demeter-sdk/framework';
+import { Pod, ProjectSpec, getClients, namespaceToSlug } from '@demeter-sdk/framework';
 import { V1DeploymentStatus, V1PersistentVolumeClaim, V1Pod, V1StatefulSetStatus, V1Volume } from '@kubernetes/client-node';
 import * as nodes from '@demeter-features/cardano-nodes';
 import fs from 'fs';
@@ -190,4 +190,11 @@ export function workloadVolumes(name: string, usesCardanoNode: boolean) {
         });
     }
     return output;
+}
+
+export function generateProjectSpec(namespace: string): ProjectSpec {
+    return {
+        slug: namespaceToSlug(namespace),
+        network: 'mainnet',
+    };
 }

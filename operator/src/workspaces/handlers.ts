@@ -9,11 +9,12 @@ import {
     V1Ingress,
     V1Service,
 } from '@kubernetes/client-node';
-import { getClients, readProjectUnsecure, Network, namespaceToSlug, DependencySpec, ServicePlugin, DependencyResource } from '@demeter-sdk/framework';
+import { getClients, Network, ServicePlugin, DependencyResource } from '@demeter-sdk/framework';
 import { API_VERSION, API_GROUP, PLURAL, SINGULAR, KIND, DEFAULT_VSCODE_IMAGE } from './constants';
 import { CustomResource, Workspace, StorageClass, CustomResourceResponse } from '@demeter-run/workloads-types';
-import { buildEnvVars, cardanoNodeDep, cleanDependencies, getDependenciesForNetwork, isCardanoNodeEnabled } from '../shared/dependencies';
+import { buildEnvVars, cardanoNodeDep, cleanDependencies, getDependenciesForNetwork } from '../shared/dependencies';
 import {
+    generateProjectSpec,
     getComputeDCUPerMin,
     getNetworkFromAnnotations,
     getResourcesFromComputeClass,
@@ -57,7 +58,7 @@ export async function handleResource(
 ): Promise<void> {
     const { apps, core, net } = getClients();
 
-    const project = await readProjectUnsecure(namespaceToSlug(owner.metadata?.namespace!));
+    const project = generateProjectSpec(owner.metadata?.namespace!);
 
     if (!project) {
         throw 'Invalid Project';

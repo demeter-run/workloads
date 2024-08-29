@@ -1,9 +1,9 @@
 import { PatchUtils, V1Container, V1EnvVar, V1Volume, V1VolumeMount, V1Deployment } from '@kubernetes/client-node';
-import { getClients, readProjectUnsecure, Network, namespaceToSlug, DependencyResource, ServicePlugin } from '@demeter-sdk/framework';
+import { getClients, Network, DependencyResource, ServicePlugin } from '@demeter-sdk/framework';
 import { API_VERSION, API_GROUP, PLURAL } from './constants';
 import { CustomResource, CustomResourceResponse, Frontend, WorkloadStatus } from '@demeter-run/workloads-types';
 import { buildEnvVars, cardanoNodeDep, cleanDependencies, getDependenciesForNetwork } from '../shared/dependencies';
-import { getComputeDCUPerMin, getDeploymentStatus, getNetworkFromAnnotations, getResourcesFromComputeClass, workloadVolumes } from '../shared';
+import { generateProjectSpec, getComputeDCUPerMin, getDeploymentStatus, getNetworkFromAnnotations, getResourcesFromComputeClass, workloadVolumes } from '../shared';
 import { checkConfigMapExistsOrCreate, configmap } from '../shared/configmap';
 import { buildSocatContainer, buildSocatContainerForPort } from '../shared/cardano-node-helper';
 import { buildPortEnvVars, getPortsForNetwork, portExists } from '../shared/ports';
@@ -38,7 +38,7 @@ export async function handleResource(
 ): Promise<void> {
     const { apps, core } = getClients();
 
-    const project = await readProjectUnsecure(namespaceToSlug(owner.metadata?.namespace!));
+    const project = generateProjectSpec(owner.metadata?.namespace!);
 
     if (!project) {
         throw 'Invalid Project';
