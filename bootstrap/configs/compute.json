@@ -94,5 +94,17 @@
             "memory": "16Gi"
         },
         "dcu": 5832
+    },
+    "mi1.x86.xlarge": {
+        "name": "Memory Intensive 1 - x86 - large",
+        "requests": {
+            "cpu": "100m",
+            "memory": "24Gi"
+        },
+        "limits": {
+            "cpu": "6",
+            "memory": "24Gi"
+        },
+        "dcu": 8748
     }
 }
