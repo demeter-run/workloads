@@ -21,7 +21,7 @@ export async function getPortsForNetwork(project: ProjectSpec, network: Network)
     for (const projectInstance of projectInstances) {
         const inst = await projectInstance.instances;
         inst.forEach(instance => {
-            if (instance.spec.network === network) {
+            if (instance.spec.network.replace('cardano-', '') === network) {
                 output.push({ ...instance, kind: projectInstance.metadata.kind });
             }
         });
