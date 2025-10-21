@@ -13,7 +13,7 @@ const MAGIC_BY_NETWORK: Record<string, string> = {
 };
 
 function networkMagic(network: Network): string | undefined {
-    return MAGIC_BY_NETWORK[network];
+    return MAGIC_BY_NETWORK[network.replace('cardano-', '')];
 }
 
 function parseDependency(dep: DependencyResource): { network: Network } {
